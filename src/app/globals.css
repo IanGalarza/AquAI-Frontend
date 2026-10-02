@@ -149,11 +149,6 @@
     outline-offset: 3px;
   }
 
-  .mobile-navigation::backdrop {
-    background: color-mix(in srgb, var(--foreground) 24%, transparent);
-    backdrop-filter: blur(4px);
-  }
-
   .skip-to-chat:focus {
     position: fixed;
     top: 12px;
