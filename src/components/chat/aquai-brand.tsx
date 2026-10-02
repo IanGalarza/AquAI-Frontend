@@ -1,0 +1,34 @@
+import Image from "next/image";
+
+type AquaiMarkProps = {
+  large?: boolean;
+};
+
+export function AquaiMark({ large = false }: AquaiMarkProps) {
+  return (
+    <span
+      className={large ? "aquai-mark aquai-mark-large" : "aquai-mark"}
+      aria-hidden="true"
+    >
+      <Image
+        src="/images/aquai-logo.png"
+        alt=""
+        width={128}
+        height={128}
+        sizes={large ? "128px" : "80px"}
+        preload
+      />
+    </span>
+  );
+}
+
+export function AquaiBrand() {
+  return (
+    <div className="flex items-center gap-3.5" aria-label="AquAI">
+      <AquaiMark />
+      <span className="text-[32px] font-semibold tracking-[-0.055em]">
+        Aqu<span className="aquai-accent">AI</span>
+      </span>
+    </div>
+  );
+}
