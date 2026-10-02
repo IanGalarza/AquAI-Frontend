@@ -25,7 +25,11 @@ function getServerAnimationSnapshot() {
   return false;
 }
 
-export function WaterBackground() {
+type WaterBackgroundProps = {
+  subdued?: boolean;
+};
+
+export function WaterBackground({ subdued = false }: WaterBackgroundProps) {
   const canAnimate = useSyncExternalStore(
     subscribeToAnimationPreference,
     getAnimationSnapshot,
@@ -34,8 +38,14 @@ export function WaterBackground() {
 
   return (
     <div className="water-background pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-      <WaterAtmosphere canAnimate={canAnimate} />
-      {canAnimate && <WaterWaves />}
+      {subdued ? (
+        <div className="water-glow water-glow-bottom opacity-30" />
+      ) : (
+        <>
+          <WaterAtmosphere canAnimate={canAnimate} />
+          {canAnimate && <WaterWaves />}
+        </>
+      )}
     </div>
   );
 }

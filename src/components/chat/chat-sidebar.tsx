@@ -9,7 +9,11 @@ const recentConversations = [
   "Normativa de agua",
 ];
 
-export function ChatSidebar() {
+type ChatSidebarProps = {
+  onNewConversation?: () => void;
+};
+
+export function ChatSidebar({ onNewConversation }: ChatSidebarProps) {
   const searchId = useId();
 
   return (
@@ -20,6 +24,7 @@ export function ChatSidebar() {
 
       <button
         type="button"
+        onClick={onNewConversation}
         className="new-conversation flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-primary px-3 py-3 text-sm font-semibold transition duration-200 hover:bg-primary-light active:scale-[0.99]"
       >
         <ChatIcon name="plus" className="size-[18px]" />

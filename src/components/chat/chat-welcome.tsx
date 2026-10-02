@@ -6,9 +6,13 @@ const suggestions = [
   "Buscá normativa o antecedentes sobre cianobacterias",
 ];
 
-export function ChatWelcome() {
+type ChatWelcomeProps = {
+  onSend: (message: string) => void;
+};
+
+export function ChatWelcome({ onSend }: ChatWelcomeProps) {
   return (
-    <section aria-labelledby="welcome-title" className="chat-welcome relative z-10 flex flex-1 flex-col items-center justify-center px-5 py-10 text-center sm:px-8">
+    <section aria-labelledby="welcome-title" className="chat-welcome relative z-10 flex min-h-full flex-col items-center justify-center px-5 py-10 text-center sm:px-8">
       <div className="welcome-mark mb-6">
         <AquaiMark large />
       </div>
@@ -24,6 +28,7 @@ export function ChatWelcome() {
           <button
             key={suggestion}
             type="button"
+            onClick={() => onSend(suggestion)}
             className="suggestion-pill w-full rounded-2xl border border-primary/25 bg-surface/55 px-5 py-3 text-[13px] leading-5 text-foreground/90 transition duration-200 hover:border-primary/60 hover:bg-primary/5 sm:w-auto sm:min-w-[390px] sm:rounded-full sm:px-7 sm:text-sm"
           >
             {suggestion}

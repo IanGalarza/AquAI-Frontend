@@ -18,7 +18,11 @@ const backdropVariants: Variants = {
   open: { opacity: 1 },
 };
 
-export function MobileNavigation() {
+type MobileNavigationProps = {
+  onNewConversation?: () => void;
+};
+
+export function MobileNavigation({ onNewConversation }: MobileNavigationProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const outsidePointerRef = useRef<number | null>(null);
@@ -171,7 +175,10 @@ export function MobileNavigation() {
           >
             <ChatIcon name="close" className="size-[18px]" />
           </button>
-          <ChatSidebar />
+          <ChatSidebar onNewConversation={() => {
+            onNewConversation?.();
+            closeNavigation();
+          }} />
         </motion.div>
       </dialog>
     </>
