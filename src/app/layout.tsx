@@ -16,6 +16,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "AquAI",
+  icons: {
+    icon: {
+      url: "/images/aquai-logo.png",
+      type: "image/png",
+    },
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
