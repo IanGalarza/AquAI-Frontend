@@ -4,6 +4,10 @@ const configuredLimit = Number(process.env.NEXT_PUBLIC_MAX_UPLOAD_BYTES || 10 * 
 export const MAX_UPLOAD_BYTES = Number.isFinite(configuredLimit) && configuredLimit > 0
   ? configuredLimit : 10 * 1024 * 1024;
 
+const configuredCatalogLoadingMs = Number(process.env.NEXT_PUBLIC_MINIMUM_CATALOG_LOADING_MS || 600);
+export const MINIMUM_CATALOG_LOADING_MS = Number.isFinite(configuredCatalogLoadingMs) && configuredCatalogLoadingMs >= 0
+  ? configuredCatalogLoadingMs : 600;
+
 export function validateSourceFile(file: Pick<File, "name" | "size">): string | null {
   if (!/\.(csv|xlsx)$/i.test(file.name)) return "Seleccioná un archivo CSV o XLSX. PDF todavía no está disponible.";
   if (file.size === 0) return "El archivo está vacío. Seleccioná un archivo con datos.";

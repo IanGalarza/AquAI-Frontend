@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { errorMessage, isTransientError } from "../services/api";
+import { withMinimumDuration } from "../utils/minimum-duration";
 
 type ResourceState<T> = { key: string | null; data: T | null; loading: boolean; error: string | null };
 
@@ -10,6 +11,7 @@ export function useSourceResource<T>(
   key: string | null,
   request: (signal: AbortSignal) => Promise<T>,
   shouldPoll: (data: T) => boolean,
+  minimumLoadingMs = 0,
 ) {
   const [state, setState] = useState<ResourceState<T>>({ key: null, data: null, loading: true, error: null });
   const [revision, setRevision] = useState(0);
@@ -40,7 +42,9 @@ export function useSourceResource<T>(
         key, data: current.key === key ? current.data : null, loading: true, error: null,
       }));
       try {
-        const data = await request(controller.signal);
+        const data = initial && minimumLoadingMs > 0
+          ? await withMinimumDuration(() => request(controller.signal), minimumLoadingMs, controller.signal)
+          : await request(controller.signal);
         if (!active || controller.signal.aborted) return;
         failures = 0;
         setState({ key, data, loading: false, error: null });
@@ -61,7 +65,7 @@ export function useSourceResource<T>(
       clearTimeout(timer);
       controller.abort();
     };
-  }, [key, request, shouldPoll, revision]);
+  }, [key, request, shouldPoll, revision, minimumLoadingMs]);
 
   return {
     data: state.key === key ? state.data : null,
