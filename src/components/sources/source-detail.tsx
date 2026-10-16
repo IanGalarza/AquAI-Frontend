@@ -10,7 +10,7 @@ function Information({ label, children }: { label: string; children: ReactNode }
 function Warnings({ warnings, title = "Advertencias" }: { warnings: string[]; title?: string }) {
   if (warnings.length === 0) return null;
   return (
-    <details open={warnings.length <= 4} className="rounded-xl border border-warning/20 bg-warning/5 px-4 py-3">
+    <details open={warnings.length <= 4} className="rounded-xl bg-warning/5 px-4 py-3">
       <summary className="cursor-pointer text-sm font-medium">{title} ({warnings.length})</summary>
       <ul className="mt-3 space-y-2 pl-4 text-xs leading-relaxed text-foreground-secondary">
         {warnings.map((warning, index) => <li key={index} className="list-disc break-words">{warning}</li>)}
@@ -22,7 +22,7 @@ function Warnings({ warnings, title = "Advertencias" }: { warnings: string[]; ti
 function DatasetCard({ dataset }: { dataset: DatasetDetail }) {
   const auxiliaryCount = dataset.columns_metadata.filter((column) => column.representation === "numeric_projection").length;
   return (
-    <article className="min-w-0 rounded-2xl border border-border bg-surface/65 p-4 sm:p-5">
+    <article className="min-w-0 rounded-2xl bg-surface/80 p-4 shadow-sm shadow-black/5 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <h3 className="min-w-0 flex-1 break-words text-sm font-semibold leading-relaxed [overflow-wrap:anywhere]">{dataset.name}</h3>
         <span className={`rounded-full border px-2.5 py-1 text-xs ${dataset.queryable ? "border-primary/25 bg-primary/5" : "border-border text-foreground-secondary"}`}>
@@ -42,7 +42,7 @@ function DatasetCard({ dataset }: { dataset: DatasetDetail }) {
         <Warnings warnings={dataset.quality_warnings} />
         {Boolean(dataset.source_locator.possible_overlap?.length) && <p className="rounded-lg bg-warning/5 px-3 py-2 text-xs leading-relaxed">El backend detectó posibles solapamientos con otros datasets. Revisá las advertencias antes de combinar observaciones.</p>}
       </div>
-      <details className="mt-4 rounded-xl border border-border bg-background/50">
+      <details className="mt-4 rounded-xl bg-background/50">
         <summary className="cursor-pointer px-4 py-3 text-sm font-medium">Metadatos de columnas ({dataset.columns_metadata.length})</summary>
         {auxiliaryCount > 0 && <p className="px-4 pb-3 text-xs leading-relaxed text-foreground-secondary">Las proyecciones numéricas son columnas auxiliares derivadas del texto original. No agregan registros ni observaciones independientes.</p>}
         <div className="max-w-full overflow-x-auto rounded-b-xl" tabIndex={0} role="region" aria-label={`Columnas de ${dataset.name}`}>
@@ -83,12 +83,12 @@ export function SourceDetail({ source, toggling, onToggle }: {
     : "Los datasets están preparados en PostgreSQL. La indexación semántica continúa por separado; esta vista se actualiza automáticamente.";
   return (
     <div className="space-y-5">
-      <section aria-labelledby="source-name" className="rounded-2xl border border-border bg-surface/65 p-4 sm:p-6">
+      <section aria-labelledby="source-name" className="rounded-2xl bg-surface/80 p-4 shadow-sm shadow-black/5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1"><h1 id="source-name" className="break-words text-xl font-medium tracking-[-0.03em] [overflow-wrap:anywhere]">{source.original_filename}</h1>{source.name !== source.original_filename && <p className="mt-1 break-words text-sm text-foreground-secondary">{source.name}</p>}</div>
           <SourceToggle active={source.isActive} busy={toggling} name={source.original_filename} onToggle={onToggle} />
         </div>
-        <p role="status" aria-live="polite" className={`mt-4 rounded-xl border px-4 py-3 text-sm leading-relaxed ${source.processing_status === "failed" ? "border-error/20 bg-error/5" : source.semantic_index_status === "failed" ? "border-warning/20 bg-warning/5" : "border-primary/20 bg-primary/5"}`}>{statusMessage}</p>
+        <p role="status" aria-live="polite" className={`mt-4 rounded-xl px-4 py-3 text-sm leading-relaxed ${source.processing_status === "failed" ? "bg-error/5" : source.semantic_index_status === "failed" ? "bg-warning/5" : "bg-primary/5"}`}>{statusMessage}</p>
         <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-3">
           <Information label="Tipo de archivo">{source.file_type.toUpperCase()}</Information>
           <Information label="Tamaño">{formatBytes(source.file_size_bytes)}</Information>
@@ -102,13 +102,13 @@ export function SourceDetail({ source, toggling, onToggle }: {
         <div className="mt-4 space-y-3">
           <Warnings warnings={warnings} title="Advertencias generales" />
           {typeof source.processing_report.warning_count === "number" && source.processing_report.warning_count > warnings.length && <p className="text-xs text-foreground-secondary">El backend informa {source.processing_report.warning_count} advertencias en total; se muestran las {warnings.length} disponibles.</p>}
-          {errors.length > 0 && <div role="alert" className="rounded-xl border border-error/20 bg-error/5 px-4 py-3"><p className="text-sm font-medium">Errores de preparación</p><ul className="mt-2 space-y-2 text-xs leading-relaxed">{errors.map((error, index) => <li key={index} className="break-words">{error}</li>)}</ul></div>}
-          {source.processing_report.semantic_index_error && <div className="rounded-xl border border-warning/20 bg-warning/5 px-4 py-3"><p className="text-sm font-medium">Indexación semántica</p><p className="mt-2 break-words text-xs leading-relaxed">{source.processing_report.semantic_index_error}</p>{prepared && <p className="mt-2 text-xs text-foreground-secondary">Esta incidencia no elimina ni invalida los datos preparados en PostgreSQL.</p>}</div>}
+          {errors.length > 0 && <div role="alert" className="rounded-xl bg-error/5 px-4 py-3"><p className="text-sm font-medium">Errores de preparación</p><ul className="mt-2 space-y-2 text-xs leading-relaxed">{errors.map((error, index) => <li key={index} className="break-words">{error}</li>)}</ul></div>}
+          {source.processing_report.semantic_index_error && <div className="rounded-xl bg-warning/5 px-4 py-3"><p className="text-sm font-medium">Indexación semántica</p><p className="mt-2 break-words text-xs leading-relaxed">{source.processing_report.semantic_index_error}</p>{prepared && <p className="mt-2 text-xs text-foreground-secondary">Esta incidencia no elimina ni invalida los datos preparados en PostgreSQL.</p>}</div>}
         </div>
       </section>
       <section aria-labelledby="datasets-title" className="min-w-0">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><h2 id="datasets-title" className="text-base font-semibold">Datasets generados <span className="ml-1 text-sm font-normal text-foreground-secondary">({source.datasets.length})</span></h2></div>
-        {source.datasets.length === 0 ? <p className="rounded-2xl border border-dashed border-border bg-surface/40 p-6 text-sm text-foreground-secondary">{source.processing_status === "failed" ? "No hay datasets disponibles. Revisá el informe de preparación." : "Todavía no hay datasets preparados."}</p> : <div className="space-y-4">{source.datasets.map((dataset) => <DatasetCard key={dataset.id} dataset={dataset} />)}</div>}
+        {source.datasets.length === 0 ? <p className="rounded-2xl bg-surface/60 p-6 text-sm text-foreground-secondary">{source.processing_status === "failed" ? "No hay datasets disponibles. Revisá el informe de preparación." : "Todavía no hay datasets preparados."}</p> : <div className="space-y-4">{source.datasets.map((dataset) => <DatasetCard key={dataset.id} dataset={dataset} />)}</div>}
         <p className="mt-4 text-xs leading-relaxed text-foreground-secondary">La API permite consultar conteos y metadatos. La consulta de filas completas y la descarga del archivo original todavía no están disponibles.</p>
       </section>
     </div>

@@ -9,6 +9,7 @@ import { errorMessage } from "@/services/api";
 import type { SourceDetail as SourceDetailData, SourceListItem, SourceSort } from "@/types/sources";
 import { formatBytes, MAX_UPLOAD_BYTES, MINIMUM_CATALOG_LOADING_MS, needsListPolling, needsSourcePolling, validateSourceFile } from "@/utils/sources";
 import { SourceDetail } from "./source-detail";
+import { SourceDetailModal } from "./source-detail-modal";
 import { SourceListRow } from "./source-list-row";
 import { SourceError } from "./source-status";
 
@@ -39,7 +40,7 @@ export function SourceManager({ onBack }: SourceManagerProps) {
 
   const loadList = useCallback((signal: AbortSignal) => listSources(query.page, signal, query), [query]);
   const loadDetail = useCallback((signal: AbortSignal) => getSource(selectedId!, signal), [selectedId]);
-  const catalog = useSourceResource(selectedId ? null : JSON.stringify(query), loadList, needsListPolling, MINIMUM_CATALOG_LOADING_MS);
+  const catalog = useSourceResource(JSON.stringify(query), loadList, needsListPolling, MINIMUM_CATALOG_LOADING_MS);
   const detail = useSourceResource(selectedId, loadDetail, needsSourcePolling);
 
   useEffect(() => {
@@ -57,7 +58,7 @@ export function SourceManager({ onBack }: SourceManagerProps) {
 
   useEffect(() => {
     function focusSearch(event: KeyboardEvent) {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k" && searchRef.current) {
+      if (!selectedRef.current && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k" && searchRef.current) {
         event.preventDefault();
         searchRef.current.focus();
       }
@@ -71,7 +72,6 @@ export function SourceManager({ onBack }: SourceManagerProps) {
     setSelectedId(id);
     setActionError(null);
     if (!keepNotice) setNotice(null);
-    viewportRef.current?.scrollTo({ top: 0, behavior: "instant" });
   }
 
   async function handleUpload(event: FormEvent<HTMLFormElement>) {
@@ -130,29 +130,26 @@ export function SourceManager({ onBack }: SourceManagerProps) {
 
   const list = catalog.data;
   const totalPages = list ? Math.max(1, Math.ceil(list.total / list.page_size)) : 1;
-  const currentResource = selectedId ? detail : catalog;
 
   return (
     <AquaiShell title="Administrar fuentes" subdued sources onBack={onBack}>
-      <div ref={viewportRef} id="sources-content" tabIndex={-1} onScroll={(event) => setShowScrollTop(event.currentTarget.scrollTop > 320)} className="relative z-10 min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain">
+      <div ref={viewportRef} id="sources-content" tabIndex={-1} onScroll={(event) => setShowScrollTop(event.currentTarget.scrollTop > 320)} className={`relative z-10 min-h-0 flex-1 overflow-x-hidden overscroll-y-contain ${selectedId ? "overflow-y-hidden" : "overflow-y-auto"}`}>
         <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col gap-5 px-4 py-5 sm:px-7 sm:py-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            {selectedId ? <button type="button" onClick={() => { selectSource(null); catalog.refresh(); }} className={secondaryButton}><ChatIcon name="arrow-left" className="size-4" />Volver al listado</button>
-              : <div className="flex min-w-0 items-center gap-3.5"><span className="grid size-12 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary/10 text-primary"><ChatIcon name="database" className="size-6" /></span><div><h1 className="text-xl font-semibold tracking-[-0.035em] sm:text-2xl">Administrar fuentes</h1><p className="mt-1 text-xs leading-relaxed text-foreground-secondary sm:text-sm">Gestioná tus archivos y datasets de fuentes de datos.</p></div></div>}
+            <div className="flex min-w-0 items-center gap-3.5"><span className="grid size-12 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary/10 text-primary"><ChatIcon name="database" className="size-6" /></span><div><h1 className="text-xl font-semibold tracking-[-0.035em] sm:text-2xl">Administrar fuentes</h1><p className="mt-1 text-xs leading-relaxed text-foreground-secondary sm:text-sm">Gestioná tus archivos y datasets de fuentes de datos.</p></div></div>
             <div className="flex w-full items-center gap-2.5 sm:w-auto">
-              {!selectedId && <div className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-surface/45 px-3 focus-within:border-primary/60 sm:w-64">
+              <div className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-surface/45 px-3 focus-within:border-primary/60 sm:w-64">
                 <ChatIcon name="search" className="size-4 shrink-0 text-foreground-secondary" />
                 <label htmlFor="source-search" className="sr-only">Buscar fuentes</label>
                 <input ref={searchRef} id="source-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} maxLength={255} placeholder="Buscar fuentes…" autoComplete="off" aria-keyshortcuts="Control+k Meta+k" className="h-10 w-full min-w-0 bg-transparent text-xs outline-none placeholder:text-foreground-secondary" />
                 <kbd aria-hidden="true" className="hidden shrink-0 rounded border border-border bg-surface-elevated/40 px-1.5 py-0.5 text-[10px] text-foreground-secondary sm:block">Ctrl K</kbd>
-              </div>}
-              <button type="button" disabled={currentResource.loading} onClick={currentResource.refresh} className={`${secondaryButton} shrink-0`} aria-label={selectedId ? "Actualizar fuente" : "Actualizar listado"}><ChatIcon name="refresh" className={`size-4 ${currentResource.loading ? "animate-spin motion-reduce:animate-none" : ""}`} />Actualizar</button>
+              </div>
+              <button type="button" disabled={catalog.loading} onClick={catalog.refresh} className={`${secondaryButton} shrink-0`} aria-label="Actualizar listado"><ChatIcon name="refresh" className={`size-4 ${catalog.loading ? "animate-spin motion-reduce:animate-none" : ""}`} />Actualizar</button>
             </div>
           </div>
-          {notice && <p role="status" aria-live="polite" className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm leading-relaxed">{notice}</p>}
-          {actionError && <SourceError message={actionError} />}
+          {!selectedId && notice && <p role="status" aria-live="polite" className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm leading-relaxed">{notice}</p>}
+          {!selectedId && actionError && <SourceError message={actionError} />}
 
-          {!selectedId && <>
             <section aria-labelledby="upload-title" className="rounded-xl border border-dashed border-primary/40 bg-primary/[0.035] px-4 py-4 sm:px-5">
               <form onSubmit={handleUpload} className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex min-w-0 flex-1 items-center gap-3.5">
@@ -181,16 +178,16 @@ export function SourceManager({ onBack }: SourceManagerProps) {
               {list && list.items.length > 0 && <ul aria-label="Listado de fuentes" aria-busy={catalog.loading} className="space-y-2.5">{list.items.map((source) => <SourceListRow key={source.id} source={source} busy={toggling.includes(source.id)} onSelect={() => selectSource(source.id)} onToggle={() => void toggleSource(source)} />)}</ul>}
               {list && list.total > 0 && <nav aria-label="Páginas de fuentes" className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-foreground-secondary"><span>Página {list.page} de {totalPages} · {list.total} fuentes</span><div className="flex gap-2"><button type="button" disabled={catalog.loading || query.page <= 1} onClick={() => setQuery((current) => ({ ...current, page: current.page - 1 }))} className={secondaryButton}>Anterior</button><button type="button" disabled={catalog.loading || query.page >= totalPages} onClick={() => setQuery((current) => ({ ...current, page: current.page + 1 }))} className={secondaryButton}>Siguiente</button></div></nav>}
             </section>
-          </>}
-
-          {selectedId && <>
-            {detail.error && <SourceError message={detail.error} onRetry={detail.refresh} />}
-            {detail.loading && !detail.data && <p role="status" className="py-10 text-center text-sm text-foreground-secondary">Consultando la fuente…</p>}
-            {detail.data && <SourceDetail source={detail.data} toggling={toggling.includes(detail.data.id)} onToggle={() => void toggleSource(detail.data!)} />}
-          </>}
         </div>
       </div>
       {showScrollTop && <button type="button" onClick={() => viewportRef.current?.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" })} aria-label="Volver arriba" title="Volver arriba" className="absolute bottom-5 right-5 z-20 grid size-11 place-items-center rounded-full border border-primary/40 bg-primary text-background shadow-lg transition hover:bg-primary-light"><ChatIcon name="arrow-up" className="size-5" /></button>}
+      {selectedId && <SourceDetailModal onClose={() => selectSource(null)} onRefresh={detail.refresh} refreshing={detail.loading}>
+        {notice && <p role="status" aria-live="polite" className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm leading-relaxed">{notice}</p>}
+        {actionError && <SourceError message={actionError} />}
+        {detail.error && <SourceError message={detail.error} onRetry={detail.refresh} />}
+        {detail.loading && !detail.data && <div role="status" className="flex min-h-52 flex-col items-center justify-center gap-4 text-sm text-foreground-secondary"><span aria-hidden="true" className="size-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary motion-reduce:animate-none" /><span>Consultando la fuente…</span></div>}
+        {detail.data && <SourceDetail source={detail.data} toggling={toggling.includes(detail.data.id)} onToggle={() => void toggleSource(detail.data!)} />}
+      </SourceDetailModal>}
     </AquaiShell>
   );
 }
