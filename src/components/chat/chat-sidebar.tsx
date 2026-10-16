@@ -1,4 +1,6 @@
 import { useId } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { AquaiBrand } from "./aquai-brand";
 import { ChatIcon } from "./chat-icon";
 
@@ -11,10 +13,13 @@ const recentConversations = [
 
 type ChatSidebarProps = {
   onNewConversation?: () => void;
+  onSourcesNavigate?: () => void;
 };
 
-export function ChatSidebar({ onNewConversation }: ChatSidebarProps) {
+export function ChatSidebar({ onNewConversation, onSourcesNavigate }: ChatSidebarProps) {
   const searchId = useId();
+  const pathname = usePathname();
+  const router = useRouter();
 
   return (
     <div className="chat-sidebar flex h-full min-h-0 flex-col px-5 pb-6 pt-7 lg:px-6 lg:pb-7 lg:pt-8">
@@ -24,7 +29,7 @@ export function ChatSidebar({ onNewConversation }: ChatSidebarProps) {
 
       <button
         type="button"
-        onClick={onNewConversation}
+        onClick={() => onNewConversation ? onNewConversation() : router.push("/")}
         className="new-conversation flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-primary px-3 py-3 text-sm font-semibold transition duration-200 hover:bg-primary-light active:scale-[0.99]"
       >
         <ChatIcon name="plus" className="size-[18px]" />
@@ -62,13 +67,15 @@ export function ChatSidebar({ onNewConversation }: ChatSidebarProps) {
         </ul>
       </nav>
 
-      <button
-        type="button"
+      <Link
+        href="/sources"
+        onClick={onSourcesNavigate}
+        aria-current={pathname === "/sources" ? "page" : undefined}
         className="sources-button mt-6 flex min-h-14 w-full shrink-0 items-center justify-center gap-3 rounded-xl border border-primary/50 bg-primary/5 px-3 py-3.5 text-sm font-medium transition hover:border-primary hover:bg-primary/10"
       >
         <ChatIcon name="database" className="size-[22px] text-primary" />
         Administrar fuentes
-      </button>
+      </Link>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { motion, useAnimationControls, type Variants } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ChatIcon } from "./chat-icon";
 import { ChatSidebar } from "./chat-sidebar";
 
@@ -23,6 +24,7 @@ type MobileNavigationProps = {
 };
 
 export function MobileNavigation({ onNewConversation }: MobileNavigationProps) {
+  const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const outsidePointerRef = useRef<number | null>(null);
@@ -176,9 +178,10 @@ export function MobileNavigation({ onNewConversation }: MobileNavigationProps) {
             <ChatIcon name="close" className="size-[18px]" />
           </button>
           <ChatSidebar onNewConversation={() => {
-            onNewConversation?.();
+            if (onNewConversation) onNewConversation();
+            else router.push("/");
             closeNavigation();
-          }} />
+          }} onSourcesNavigate={closeImmediately} />
         </motion.div>
       </dialog>
     </>

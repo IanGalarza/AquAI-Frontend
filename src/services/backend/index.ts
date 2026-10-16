@@ -1,0 +1,23 @@
+import { apiRequest } from "../api";
+import type { SourceAccepted, SourceDetail, SourceList } from "../../types/sources";
+
+export function listSources(page = 1, signal?: AbortSignal): Promise<SourceList> {
+  return apiRequest(`/sources?page=${page}&page_size=20`, { signal });
+}
+
+export function getSource(id: string, signal?: AbortSignal): Promise<SourceDetail> {
+  return apiRequest(`/sources/${encodeURIComponent(id)}`, { signal });
+}
+
+export function uploadSource(file: File, signal?: AbortSignal): Promise<SourceAccepted> {
+  const body = new FormData();
+  body.append("file", file);
+  return apiRequest("/sources", { method: "POST", body, signal });
+}
+
+export function setSourceActive(id: string, isActive: boolean, signal?: AbortSignal): Promise<SourceDetail> {
+  return apiRequest(`/sources/${encodeURIComponent(id)}`, {
+    method: "PATCH", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ isActive }), signal,
+  });
+}

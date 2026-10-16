@@ -1,6 +1,6 @@
 import type { SVGProps } from "react";
 
-type IconName = "plus" | "search" | "message" | "database" | "send" | "sun" | "moon" | "menu" | "close";
+type IconName = "plus" | "search" | "message" | "database" | "send" | "sun" | "moon" | "menu" | "close" | "upload" | "refresh" | "arrow-left" | "chevron-right";
 
 type ChatIconProps = SVGProps<SVGSVGElement> & {
   name: IconName;
@@ -16,6 +16,10 @@ const paths: Record<IconName, React.ReactNode> = {
   moon: <path d="M20.9 13a9 9 0 1 1-9.9-9.9A7 7 0 0 0 20.9 13Z" />,
   menu: <path d="M4 6h16M4 12h16M4 18h16" />,
   close: <path d="m6 6 12 12M6 18 18 6" />,
+  upload: <><path d="M12 16V3m-5 5 5-5 5 5M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4" /></>,
+  refresh: <><path d="M20 7v5h-5M4 17v-5h5" /><path d="M6 6a8 8 0 0 1 13 2l1 4M4 12l1 4a8 8 0 0 0 13 2" /></>,
+  "arrow-left": <path d="M20 12H4m6-6-6 6 6 6" />,
+  "chevron-right": <path d="m9 5 7 7-7 7" />,
 };
 
 export function ChatIcon({ name, className, ...props }: ChatIconProps) {
