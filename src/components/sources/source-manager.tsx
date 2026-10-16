@@ -13,7 +13,11 @@ import { ProcessingBadge, SemanticBadge, SourceError, SourceToggle } from "./sou
 
 const secondaryButton = "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-surface/65 px-3 text-sm transition enabled:hover:border-primary/50 enabled:hover:bg-primary/5 disabled:cursor-default disabled:opacity-45";
 
-export function SourceManager() {
+type SourceManagerProps = {
+  onBack?: () => void;
+};
+
+export function SourceManager({ onBack }: SourceManagerProps) {
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -106,7 +110,7 @@ export function SourceManager() {
   const currentResource = selectedId ? detail : catalog;
 
   return (
-    <AquaiShell title="Administrar fuentes" subdued sources>
+    <AquaiShell title="Administrar fuentes" subdued sources onBack={onBack}>
       <div ref={viewportRef} id="sources-content" tabIndex={-1} className="relative z-10 min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain">
         <div className="mx-auto w-full max-w-[1200px] space-y-5 px-4 py-6 sm:px-7 sm:py-8 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-3">

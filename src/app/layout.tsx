@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children, sources }: LayoutProps<"/">) {
   return (
     <html
       lang="es-AR"
@@ -38,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="min-h-full flex flex-col">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>{children}{sources}</ThemeProvider>
       </body>
     </html>
   );

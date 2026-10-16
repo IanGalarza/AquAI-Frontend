@@ -16,26 +16,6 @@ la barra lateral o el menú móvil. FastAPI permite los orígenes locales
 `http://localhost:3000` y `http://127.0.0.1:3000`. Si se usa otro origen, hay que
 agregarlo a la configuración CORS del backend.
 
-## Administración de fuentes
-
-La ruta `/sources` reutiliza el marco de navegación, marca, fondo, iconos y temas
-de la pantalla existente. `src/services/api` centraliza HTTP y errores;
-`src/services/backend` conecta exclusivamente `POST /sources`, `GET /sources`,
-`GET /sources/{id}` y `PATCH /sources/{id}`. El formulario envía un único campo
-`file` mediante multipart y valida extensión, archivo vacío y tamaño.
-
-El listado respeta la paginación de FastAPI. El detalle muestra datasets,
-advertencias, conteos y metadatos reales de columnas, incluyendo proyecciones
-auxiliares. Preparación e indexación se consultan por separado cada 2,5 segundos
-mientras hay trabajo pendiente. Los errores transitorios se reintentan con una
-espera de hasta 15 segundos. Cada recurso tiene una sola consulta en vuelo;
-al cambiar de fuente o salir se cancelan las solicitudes y los temporizadores.
-
-Desactivar conserva los datos y reactivar no reprocesa una fuente fallida.
-La vista informa duplicados sin presentarlos como nuevas cargas. No incluye
-descarga de originales, consulta de filas, eliminación ni activación individual
-de datasets porque la API no ofrece esas operaciones.
-
 ## Verificación
 
 ```powershell

@@ -69,6 +69,7 @@ export function ChatSidebar({ onNewConversation, onSourcesNavigate }: ChatSideba
 
       <Link
         href="/sources"
+        scroll={false}
         onClick={onSourcesNavigate}
         aria-current={pathname === "/sources" ? "page" : undefined}
         className="sources-button mt-6 flex min-h-14 w-full shrink-0 items-center justify-center gap-3 rounded-xl border border-primary/50 bg-primary/5 px-3 py-3.5 text-sm font-medium transition hover:border-primary hover:bg-primary/10"
