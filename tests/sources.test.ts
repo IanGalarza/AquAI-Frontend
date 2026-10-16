@@ -38,6 +38,23 @@ test("lista paginada y detalle usan las rutas y nombres reales del backend", asy
   assert.deepEqual(await getSource("123"), source);
 });
 
+test("búsqueda y orden opcionales llegan al backend junto con la página y la cancelación", async (context) => {
+  const controller = new AbortController();
+  const list: SourceList = { items: [], total: 0, page: 2, page_size: 20 };
+  context.mock.method(globalThis, "fetch", async (url: string, options: RequestInit) => {
+    const request = new URL(url);
+    assert.equal(request.pathname, "/sources");
+    assert.equal(request.searchParams.get("page"), "2");
+    assert.equal(request.searchParams.get("page_size"), "20");
+    assert.equal(request.searchParams.get("name"), "pH & 100%_agua");
+    assert.equal(request.searchParams.get("sort"), "oldest");
+    assert.ok(options.signal instanceof AbortSignal);
+    assert.equal(options.signal.aborted, false);
+    return Response.json(list);
+  });
+  assert.deepEqual(await listSources(2, controller.signal, { name: "  pH & 100%_agua  ", sort: "oldest" }), list);
+});
+
 test("activación envía isActive y respeta el estado independiente devuelto", async (context) => {
   const updated = { ...source, isActive: false, semantic_index_status: "pending", queryable: false };
   context.mock.method(globalThis, "fetch", async (url: string, options: RequestInit) => {

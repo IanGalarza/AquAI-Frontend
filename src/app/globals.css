@@ -21,6 +21,14 @@
 }
 
 @layer components {
+  .source-status-ready {
+    color: #15803d;
+  }
+
+  :root[data-theme="dark"] .source-status-ready {
+    color: var(--primary-light);
+  }
+
   .aquai-accent {
     color: color-mix(in srgb, var(--primary) 70%, var(--foreground));
   }

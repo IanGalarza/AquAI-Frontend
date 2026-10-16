@@ -30,7 +30,7 @@ export function AquaiShell({ title, children, onNewConversation, onBack, subdued
       </aside>}
       <main className="relative isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <WaterBackground subdued={subdued} />
-        <header className="relative z-10 flex h-[72px] shrink-0 items-center justify-between gap-3 border-b border-border/65 px-4 sm:h-20 sm:px-7 lg:px-8">
+        <header className={`relative z-10 flex shrink-0 items-center justify-between gap-3 border-b border-border/65 px-4 sm:px-7 lg:px-8 ${sources ? "h-14 sm:h-16" : "h-[72px] sm:h-20"}`}>
           <div className="flex min-w-0 items-center gap-2">
             {sources ? <>
               {onBack ? <button type="button" onClick={onBack} aria-label="Volver al chat" className={backClassName}>

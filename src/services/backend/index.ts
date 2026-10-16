@@ -1,8 +1,11 @@
 import { apiRequest } from "../api";
-import type { SourceAccepted, SourceDetail, SourceList } from "../../types/sources";
+import type { SourceAccepted, SourceDetail, SourceList, SourceListFilters } from "../../types/sources";
 
-export function listSources(page = 1, signal?: AbortSignal): Promise<SourceList> {
-  return apiRequest(`/sources?page=${page}&page_size=20`, { signal });
+export function listSources(page = 1, signal?: AbortSignal, filters: SourceListFilters = {}): Promise<SourceList> {
+  const params = new URLSearchParams({ page: String(page), page_size: "20" });
+  if (filters.name?.trim()) params.set("name", filters.name.trim());
+  if (filters.sort) params.set("sort", filters.sort);
+  return apiRequest(`/sources?${params}`, { signal });
 }
 
 export function getSource(id: string, signal?: AbortSignal): Promise<SourceDetail> {

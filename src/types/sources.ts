@@ -1,5 +1,7 @@
 export type ProcessingStatus = "uploaded" | "processing" | "ready" | "ready_with_warnings" | "failed";
 export type SemanticIndexStatus = "pending" | "processing" | "ready" | "failed";
+export type SourceSort = "newest" | "oldest" | "name_asc" | "name_desc";
+export type SourceListFilters = { name?: string; sort?: SourceSort };
 
 export type SourceAccepted = {
   id: string;
