@@ -1,7 +1,7 @@
 import { AquaiMark } from "./aquai-brand";
 
 const suggestions = [
-  "Analizá este dataset de calidad del agua",
+  "Analizá esta tabla de calidad del agua",
   "Compará pH y turbidez entre campañas",
   "Buscá normativa o antecedentes sobre cianobacterias",
 ];

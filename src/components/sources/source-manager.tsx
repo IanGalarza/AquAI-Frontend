@@ -102,8 +102,8 @@ export function SourceManager({ onBack }: SourceManagerProps) {
       const accepted = await uploadSource(file, controller.signal);
       if (controller.signal.aborted) return;
       setNotice(accepted.duplicate
-        ? "Este archivo ya existe. Se muestra la fuente correspondiente; no se creó una carga nueva."
-        : "Archivo recibido. Podés seguir su preparación y la indexación semántica a continuación.");
+        ? "Este archivo ya está cargado. Abrimos su detalle para que puedas revisarlo."
+        : "Archivo recibido. Podés seguir su preparación a continuación.");
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
       setQuery((current) => ({ ...current, page: 1 }));
@@ -130,7 +130,7 @@ export function SourceManager({ onBack }: SourceManagerProps) {
       if (controller.signal.aborted) return;
       if (selectedRef.current === updated.id) detail.replace(updated);
       catalog.refresh();
-      setNotice(updated.isActive ? "La fuente se activó. Su disponibilidad depende del estado de preparación." : "La fuente se desactivó. El archivo y sus datasets se conservan.");
+      setNotice(updated.isActive ? "La fuente se activó. Vas a poder consultarla cuando termine su preparación." : "La fuente se desactivó. El archivo y sus tablas se conservan.");
     } catch (error) {
       if (!controller.signal.aborted) setActionError(errorMessage(error));
     } finally {
@@ -148,7 +148,7 @@ export function SourceManager({ onBack }: SourceManagerProps) {
       <div ref={viewportRef} id="sources-content" tabIndex={-1} onScroll={(event) => setShowScrollTop(event.currentTarget.scrollTop > 320)} className={`relative z-10 min-h-0 flex-1 overflow-x-hidden overscroll-y-contain ${selectedId ? "overflow-y-hidden" : "overflow-y-auto"}`}>
         <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col gap-5 px-4 py-5 sm:px-7 sm:py-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-3.5"><span className="grid size-12 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary/10 text-primary"><ChatIcon name="database" className="size-6" /></span><div><h1 className="text-xl font-semibold tracking-[-0.035em] sm:text-2xl">Administrar fuentes</h1><p className="mt-1 text-xs leading-relaxed text-foreground-secondary sm:text-sm">Gestioná tus archivos y datasets de fuentes de datos.</p></div></div>
+            <div className="flex min-w-0 items-center gap-3.5"><span className="grid size-12 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary/10 text-primary"><ChatIcon name="database" className="size-6" /></span><div><h1 className="text-xl font-semibold tracking-[-0.035em] sm:text-2xl">Administrar fuentes</h1><p className="mt-1 text-xs leading-relaxed text-foreground-secondary sm:text-sm">Gestioná tus archivos y tablas de datos.</p></div></div>
             <div className="flex w-full items-center gap-2.5 sm:w-auto">
               <div className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-surface/45 px-3 focus-within:border-primary/60 sm:w-64">
                 <ChatIcon name="search" className="size-4 shrink-0 text-foreground-secondary" />
@@ -202,14 +202,14 @@ export function SourceManager({ onBack }: SourceManagerProps) {
               </div>
               {catalog.error && <div className="mb-4"><SourceError message={catalog.error} onRetry={catalog.refresh} /></div>}
               {catalog.loading && !list && <div role="status" aria-live="polite" className="flex min-h-60 flex-1 flex-col items-center justify-center gap-5 px-4 py-12 text-center text-base font-medium text-foreground-secondary sm:text-lg"><span aria-hidden="true" className="size-12 shrink-0 animate-spin rounded-full border-[3px] border-primary/20 border-t-primary motion-reduce:animate-none sm:size-14" /><span>Obteniendo tus fuentes…</span></div>}
-              {list && list.items.length === 0 && <div className="rounded-xl border border-dashed border-border bg-surface/40 px-5 py-10 text-center"><ChatIcon name="database" className="mx-auto size-8 text-primary" /><p className="mt-4 text-sm font-medium">{list.total > 0 ? "No hay fuentes en esta página" : query.name ? "No se encontraron fuentes" : "Todavía no hay fuentes"}</p><p className="mt-2 text-sm text-foreground-secondary">{list.total > 0 ? "Volvé a la página anterior para ver las fuentes disponibles." : query.name ? "Probá con otro nombre o limpiá la búsqueda." : "Subí un CSV o XLSX para preparar tus primeros datasets."}</p>{query.name && <button type="button" onClick={() => setSearch("")} className={`${secondaryButton} mt-4`}>Limpiar búsqueda</button>}</div>}
+              {list && list.items.length === 0 && <div className="rounded-xl border border-dashed border-border bg-surface/40 px-5 py-10 text-center"><ChatIcon name="database" className="mx-auto size-8 text-primary" /><p className="mt-4 text-sm font-medium">{list.total > 0 ? "No hay fuentes en esta página" : query.name ? "No se encontraron fuentes" : "Todavía no hay fuentes"}</p><p className="mt-2 text-sm text-foreground-secondary">{list.total > 0 ? "Volvé a la página anterior para ver las fuentes disponibles." : query.name ? "Probá con otro nombre o limpiá la búsqueda." : "Subí un CSV o XLSX para preparar tus primeras tablas."}</p>{query.name && <button type="button" onClick={() => setSearch("")} className={`${secondaryButton} mt-4`}>Limpiar búsqueda</button>}</div>}
               {list && list.items.length > 0 && <ul aria-label="Listado de fuentes" aria-busy={catalog.loading} className="space-y-2.5">{list.items.map((source) => <SourceListRow key={source.id} source={source} busy={toggling.includes(source.id)} onSelect={() => selectSource(source.id)} onToggle={() => void toggleSource(source)} />)}</ul>}
               {list && list.total > 0 && <nav aria-label="Páginas de fuentes" className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-foreground-secondary"><span>Página {list.page} de {totalPages} · {list.total} fuentes</span><div className="flex gap-2"><button type="button" disabled={catalog.loading || query.page <= 1} onClick={() => setQuery((current) => ({ ...current, page: current.page - 1 }))} className={secondaryButton}>Anterior</button><button type="button" disabled={catalog.loading || query.page >= totalPages} onClick={() => setQuery((current) => ({ ...current, page: current.page + 1 }))} className={secondaryButton}>Siguiente</button></div></nav>}
             </section>
         </div>
       </div>
       {showScrollTop && <button type="button" onClick={() => viewportRef.current?.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" })} aria-label="Volver arriba" title="Volver arriba" className="absolute bottom-5 right-5 z-20 grid size-11 place-items-center rounded-full border border-primary/40 bg-primary text-background shadow-lg transition hover:bg-primary-light"><ChatIcon name="arrow-up" className="size-5" /></button>}
-      {selectedId && <SourceDetailModal onClose={() => selectSource(null)} onRefresh={detail.refresh} refreshing={detail.loading}>
+      {selectedId && <SourceDetailModal source={detail.data ?? list?.items.find((source) => source.id === selectedId) ?? null} onClose={() => selectSource(null)} onRefresh={detail.refresh} refreshing={detail.loading}>
         {notice && <p role="status" aria-live="polite" className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm leading-relaxed">{notice}</p>}
         {actionError && <SourceError message={actionError} />}
         {detail.error && <SourceError message={detail.error} onRetry={detail.refresh} />}

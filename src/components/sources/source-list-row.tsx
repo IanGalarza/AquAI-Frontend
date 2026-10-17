@@ -19,10 +19,10 @@ export function SourceListRow({ source, busy, onSelect, onToggle }: SourceListRo
       </button>
       <dl className="order-3 col-span-2 grid grid-cols-2 gap-3 pt-1 lg:order-2 lg:col-span-1 lg:pt-0">
         <div><dt className="mb-1.5 text-[11px] text-foreground-secondary">Procesamiento</dt><dd><ProcessingBadge status={source.processing_status} compact /></dd></div>
-        <div><dt className="mb-1.5 text-[11px] text-foreground-secondary">Índice semántico</dt><dd><SemanticBadge status={source.semantic_index_status} compact /></dd></div>
+        <div><dt className="mb-1.5 text-[11px] text-foreground-secondary">Búsqueda</dt><dd><SemanticBadge status={source.semantic_index_status} compact /></dd></div>
       </dl>
       <dl className="order-4 min-w-0 lg:order-3">
-        <dt className="mb-1.5 flex items-center gap-1.5 text-[11px] text-foreground-secondary"><ChatIcon name="database" className="size-3.5 shrink-0" />Datasets</dt><dd className="text-xs font-medium lg:pl-5">{source.dataset_count}</dd>
+        <dt className="mb-1.5 flex items-center gap-1.5 text-[11px] text-foreground-secondary"><ChatIcon name="table" className="size-3.5 shrink-0" />Tablas</dt><dd className="text-xs font-medium lg:pl-5">{source.dataset_count}</dd>
       </dl>
       <dl className="order-5 min-w-0 lg:order-4">
         <dt className="mb-1.5 flex items-center gap-1.5 text-[11px] text-foreground-secondary"><ChatIcon name="calendar" className="size-3.5 shrink-0" />Cargado</dt><dd className="text-[11px] leading-relaxed"><time dateTime={source.created_at}>{formatDate(source.created_at)}</time></dd>

@@ -1,11 +1,12 @@
 import type { ProcessingStatus, SemanticIndexStatus } from "@/types/sources";
+import { formatSourceMessage } from "@/utils/sources";
 
 const processingLabels: Record<ProcessingStatus, string> = {
   uploaded: "En cola", processing: "Preparando", ready: "Preparada",
   ready_with_warnings: "Con advertencias", failed: "Falló la preparación",
 };
 const indexLabels: Record<SemanticIndexStatus, string> = {
-  pending: "Pendiente", processing: "Indexando", ready: "Disponible", failed: "No disponible",
+  pending: "Pendiente", processing: "Preparando", ready: "Disponible", failed: "No disponible",
 };
 
 function Badge({ label, status, busy, compact = false }: { label: string; status: string; busy: boolean; compact?: boolean }) {
@@ -51,7 +52,7 @@ export function SourceToggle({ active, busy, name, onToggle, compact = false }: 
 export function SourceError({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
     <div role="alert" className="rounded-xl bg-error/5 px-4 py-3 text-sm leading-relaxed">
-      <p className="break-words">{message}</p>
+      <p className="break-words">{formatSourceMessage(message)}</p>
       {onRetry && <button type="button" onClick={onRetry} className="mt-2 min-h-9 rounded-lg px-2 text-sm font-medium text-error underline underline-offset-4">Volver a intentar</button>}
     </div>
   );

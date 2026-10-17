@@ -39,7 +39,18 @@ export function formatDate(value: string): string {
   return Number.isNaN(date.getTime()) ? "Fecha no disponible" : date.toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
 }
 
+export function formatSourceMessage(message: string): string {
+  return message
+    .replace(/No se encontraron tablas confiables;\s*se conserva el original\./g, "No se encontraron tablas confiables, por lo que se conserva el archivo original.")
+    .replace(/permanece TEXT porque contiene valores mixtos o ambiguos/g, "se conserva como texto porque combina distintos tipos de datos o valores poco claros")
+    .replace(/fórmulas se conservan como expresiones de texto;\s*no se recalcularon/g, "fórmulas se guardaron como texto, sin volver a calcularse")
+    .replace(/revisar possible_overlap antes de combinar observaciones/g, "revisá las advertencias antes de combinar los datos")
+    .replace(/;\s+(\S)/g, (_, next: string) => `. ${next.toLocaleUpperCase("es-AR")}`);
+}
+
 export function sourceErrors(source: SourceDetail): string[] {
   return (source.processing_report.errors || []).flatMap((error) =>
-    typeof error === "string" ? [error] : error.message ? [error.message] : []);
+    typeof error === "string" ? [formatSourceMessage(error)]
+      : error.code === "no_reliable_tables" ? ["No se encontraron tablas confiables, por lo que se conserva el archivo original."]
+      : error.message ? [formatSourceMessage(error.message)] : []);
 }

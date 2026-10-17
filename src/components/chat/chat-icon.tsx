@@ -1,6 +1,6 @@
 import type { SVGProps } from "react";
 
-type IconName = "plus" | "search" | "message" | "database" | "send" | "sun" | "moon" | "menu" | "close" | "upload" | "refresh" | "arrow-left" | "arrow-up" | "chevron-right" | "chevron-down" | "file" | "folder" | "calendar" | "clock" | "cloud-upload" | "eye";
+type IconName = "plus" | "search" | "message" | "database" | "send" | "sun" | "moon" | "menu" | "close" | "upload" | "refresh" | "arrow-left" | "arrow-up" | "chevron-right" | "chevron-down" | "file" | "folder" | "calendar" | "clock" | "cloud-upload" | "eye" | "table" | "rows" | "columns" | "text" | "hash" | "description" | "check-circle" | "alert-triangle" | "alert-circle" | "calculator";
 
 type ChatIconProps = SVGProps<SVGSVGElement> & {
   name: IconName;
@@ -28,6 +28,16 @@ const paths: Record<IconName, React.ReactNode> = {
   calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 11h18" /></>,
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
   "cloud-upload": <><path d="M7 18H6a4 4 0 0 1-1-7.9A7 7 0 0 1 18.5 8a5 5 0 0 1-.5 10h-1M12 21V11m-4 4 4-4 4 4" /></>,
+  table: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 10h18M9 10v10M15 10v10" /></>,
+  rows: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M3 15h18" /></>,
+  columns: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16M15 4v16" /></>,
+  text: <path d="M5 7V4h14v3M12 4v16M8 20h8" />,
+  hash: <path d="m10 3-4 18M18 3l-4 18M4 9h17M3 15h17" />,
+  description: <><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6Z" /><path d="M14 3v6h6M8 13h8M8 17h5" /></>,
+  "check-circle": <><circle cx="12" cy="12" r="9" /><path d="m8 12 3 3 5-6" /></>,
+  "alert-triangle": <><path d="m10.3 4-8 14a2 2 0 0 0 1.7 3h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0Z" /><path d="M12 9v4M12 17h.01" /></>,
+  "alert-circle": <><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 17h.01" /></>,
+  calculator: <><rect x="5" y="2" width="14" height="20" rx="2" /><path d="M8 6h8M8 11h1M15 11h1M8 15h1M15 15h1M8 19h1M15 19h1" /></>,
 };
 
 export function ChatIcon({ name, className, ...props }: ChatIconProps) {
