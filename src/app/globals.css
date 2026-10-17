@@ -22,11 +22,7 @@
 
 @layer components {
   .source-status-ready {
-    color: #15803d;
-  }
-
-  :root[data-theme="dark"] .source-status-ready {
-    color: var(--primary-light);
+    color: var(--success);
   }
 
   .aquai-accent {
@@ -68,12 +64,7 @@
 
   .new-conversation,
   .send-button {
-    color: var(--foreground);
-  }
-
-  :root[data-theme="dark"] .new-conversation,
-  :root[data-theme="dark"] .send-button {
-    color: var(--background);
+    color: var(--on-action);
   }
 
   .theme-icon-sun {

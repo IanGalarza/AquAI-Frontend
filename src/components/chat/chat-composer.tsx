@@ -33,7 +33,7 @@ export function ChatComposer({ value, onChange, onSend, inputRef }: ChatComposer
           event.preventDefault();
           if (canSend) onSend(value);
         }}
-        className="chat-composer flex items-end gap-3 rounded-2xl border border-border bg-surface/90 p-2.5 pl-4 transition focus-within:border-primary/55 sm:pl-5"
+        className="chat-composer flex items-end gap-3 rounded-md border border-border bg-surface/90 p-2.5 pl-4 transition focus-within:border-primary/55 sm:pl-5"
       >
         <label htmlFor="chat-query" className="sr-only">Tu consulta sobre calidad del agua</label>
         <textarea
@@ -52,7 +52,7 @@ export function ChatComposer({ value, onChange, onSend, inputRef }: ChatComposer
           disabled={!canSend}
           aria-label="Enviar consulta"
           title="Enviar consulta"
-          className="send-button grid size-11 shrink-0 place-items-center rounded-xl bg-primary transition enabled:hover:bg-primary-light enabled:active:scale-95 disabled:cursor-default disabled:opacity-40"
+          className="send-button grid size-11 shrink-0 place-items-center rounded-sm bg-action transition enabled:hover:bg-action-hover enabled:active:scale-95 disabled:cursor-default disabled:opacity-40"
         >
           <ChatIcon name="send" className="size-[21px]" />
         </button>

@@ -1,9 +1,13 @@
 @theme inline {
   --color-background: var(--background);
+  --color-sidebar: var(--sidebar);
   --color-surface: var(--surface);
   --color-surface-elevated: var(--surface-elevated);
   --color-primary: var(--primary);
   --color-primary-light: var(--primary-light);
+  --color-action: var(--action);
+  --color-action-hover: var(--action-hover);
+  --color-on-action: var(--on-action);
   --color-foreground: var(--foreground);
   --color-foreground-secondary: var(--foreground-secondary);
   --color-border: var(--border);

@@ -30,13 +30,13 @@ export function ChatSidebar({ onNewConversation, onSourcesNavigate }: ChatSideba
       <button
         type="button"
         onClick={() => onNewConversation ? onNewConversation() : router.push("/")}
-        className="new-conversation flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-primary px-3 py-3 text-sm font-semibold transition duration-200 hover:bg-primary-light active:scale-[0.99]"
+        className="new-conversation flex min-h-12 w-full items-center justify-center gap-2.5 rounded-sm bg-action px-3 py-3 text-sm font-semibold transition duration-200 hover:bg-action-hover active:scale-[0.99]"
       >
         <ChatIcon name="plus" className="size-[18px]" />
         Nueva conversación
       </button>
 
-      <div className="chat-search mt-4 flex items-center gap-2.5 rounded-xl border border-border bg-background/40 px-3.5 transition focus-within:border-primary/60">
+      <div className="chat-search mt-4 flex items-center gap-2.5 rounded-sm border border-border bg-background/40 px-3.5 transition focus-within:border-primary/60">
         <ChatIcon name="search" className="size-[18px] shrink-0 text-foreground-secondary" />
         <label htmlFor={searchId} className="sr-only">Buscar conversaciones</label>
         <input
@@ -57,7 +57,7 @@ export function ChatSidebar({ onNewConversation, onSourcesNavigate }: ChatSideba
             <li key={conversation}>
               <button
                 type="button"
-                className="flex min-h-12 w-full items-center gap-3 rounded-lg px-2.5 py-3 text-left text-[13px] text-foreground/90 transition hover:bg-surface-elevated/60"
+                className="flex min-h-12 w-full items-center gap-3 rounded-sm px-2.5 py-3 text-left text-[13px] text-foreground/90 transition hover:bg-surface-elevated/60"
               >
                 <ChatIcon name="message" className="size-[18px] shrink-0 text-foreground-secondary" />
                 <span>{conversation}</span>
@@ -72,7 +72,7 @@ export function ChatSidebar({ onNewConversation, onSourcesNavigate }: ChatSideba
         scroll={false}
         onClick={onSourcesNavigate}
         aria-current={pathname === "/sources" ? "page" : undefined}
-        className="sources-button mt-6 flex min-h-14 w-full shrink-0 items-center justify-center gap-3 rounded-xl border border-primary/50 bg-primary/5 px-3 py-3.5 text-sm font-medium transition hover:border-primary hover:bg-primary/10"
+        className="sources-button mt-6 flex min-h-14 w-full shrink-0 items-center justify-center gap-3 rounded-sm border border-primary/50 bg-primary/5 px-3 py-3.5 text-sm font-medium transition hover:border-primary hover:bg-primary/10"
       >
         <ChatIcon name="database" className="size-[22px] text-primary" />
         Administrar fuentes

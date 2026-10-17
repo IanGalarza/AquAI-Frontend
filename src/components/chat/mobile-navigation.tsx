@@ -120,7 +120,7 @@ export function MobileNavigation({ onNewConversation }: MobileNavigationProps) {
         aria-expanded={isOpen}
         aria-controls="mobile-conversations"
         onClick={openNavigation}
-        className="grid size-10 shrink-0 place-items-center rounded-lg text-foreground-secondary transition hover:bg-surface-elevated md:hidden"
+        className="grid size-10 shrink-0 place-items-center rounded-sm text-foreground-secondary transition hover:bg-surface-elevated md:hidden"
       >
         <ChatIcon name="menu" />
       </button>
@@ -167,13 +167,13 @@ export function MobileNavigation({ onNewConversation }: MobileNavigationProps) {
           animate={controls}
           variants={panelVariants}
           transition={{ type: "spring", duration: 0.34, bounce: 0 }}
-          className="absolute inset-y-0 left-0 w-[min(320px,90vw)] border-r border-border bg-surface will-change-transform"
+          className="absolute inset-y-0 left-0 w-[min(320px,90vw)] border-r border-border bg-sidebar will-change-transform"
         >
           <button
             type="button"
             aria-label="Cerrar conversaciones"
             onClick={closeNavigation}
-            className="absolute right-3 top-3 grid size-9 place-items-center rounded-full text-foreground-secondary transition hover:bg-surface-elevated"
+            className="absolute right-3 top-3 grid size-9 place-items-center rounded-sm text-foreground-secondary transition hover:bg-surface-elevated"
           >
             <ChatIcon name="close" className="size-[18px]" />
           </button>

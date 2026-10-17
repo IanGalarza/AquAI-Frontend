@@ -18,14 +18,14 @@ type AquaiShellProps = {
 };
 
 export function AquaiShell({ title, children, onNewConversation, onBack, subdued = false, sources = false }: AquaiShellProps) {
-  const backClassName = "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg px-2 text-sm text-foreground-secondary transition hover:bg-surface-elevated/60 hover:text-foreground";
+  const backClassName = "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-sm px-2 text-sm text-foreground-secondary transition hover:bg-surface-elevated/60 hover:text-foreground";
 
   return (
     <div className={`aquai-chat h-dvh min-h-0 bg-background font-sans ${sources ? "flex flex-col" : "grid md:grid-cols-[270px_minmax(0,1fr)] lg:grid-cols-[292px_minmax(0,1fr)]"}`}>
       <a href={sources ? "#sources-content" : "#chat-query"} className="skip-to-chat sr-only focus:not-sr-only">
         {sources ? "Ir a las fuentes" : "Ir a la consulta"}
       </a>
-      {!sources && <aside aria-label="Barra lateral de AquAI" className="hidden min-h-0 border-r border-border/80 bg-surface/65 md:block">
+      {!sources && <aside aria-label="Barra lateral de AquAI" className="hidden min-h-0 border-r border-border/80 bg-sidebar md:block">
         <ChatSidebar onNewConversation={onNewConversation} />
       </aside>}
       <main className="relative isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">

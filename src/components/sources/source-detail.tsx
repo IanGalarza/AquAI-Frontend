@@ -21,7 +21,7 @@ function Information({ label, icon, children }: { label: string; icon: IconName;
 function Warnings({ warnings, title = "Advertencias" }: { warnings: string[]; title?: string }) {
   if (warnings.length === 0) return null;
   return (
-    <details open={warnings.length <= 4} className="group rounded-xl bg-warning/5 px-3.5 py-3">
+    <details open={warnings.length <= 4} className="group rounded-sm bg-warning/5 px-3.5 py-3">
       <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-medium [&::-webkit-details-marker]:hidden">
         <ChatIcon name="alert-triangle" className="size-4 shrink-0 text-warning" />
         {title}<span className="text-foreground-secondary">({warnings.length})</span>
@@ -60,13 +60,13 @@ function ColumnCard({ column, columns }: { column: ColumnMetadata; columns: Colu
     </>}
   </> : null);
   const heading = <>
-    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-elevated/65 text-foreground-secondary"><ChatIcon name={type.icon} className="size-[18px]" /></span>
+    <span className="grid size-9 shrink-0 place-items-center rounded-sm bg-surface-elevated/65 text-foreground-secondary"><ChatIcon name={type.icon} className="size-[18px]" /></span>
     <span className="min-w-0 flex-1"><span className="block break-words text-xs font-medium [overflow-wrap:anywhere]">{column.original_name}</span><span className="mt-1 block text-[11px] text-foreground-secondary">{type.label}</span></span>
-    {column.unit && <span className="max-w-20 shrink-0 break-words rounded-lg bg-surface-elevated/60 px-2 py-1 text-[10px] text-foreground-secondary">{column.unit}</span>}
+    {column.unit && <span className="max-w-20 shrink-0 break-words rounded-sm bg-surface-elevated/60 px-2 py-1 text-[10px] text-foreground-secondary">{column.unit}</span>}
   </>;
   return (
-    <li className="min-w-0 self-start rounded-xl bg-background/60">
-      {hasInformation ? <button type="button" {...triggerProps} className="flex min-h-16 w-full items-center gap-2.5 rounded-xl p-3 text-left transition-colors hover:bg-surface-elevated/30 focus-visible:bg-surface-elevated/30">{heading}</button> : <div className="flex min-h-16 items-center gap-2.5 p-3">{heading}</div>}
+    <li className="min-w-0 self-start rounded-sm bg-background/60">
+      {hasInformation ? <button type="button" {...triggerProps} className="flex min-h-16 w-full items-center gap-2.5 rounded-sm p-3 text-left transition-colors hover:bg-surface-elevated/30 focus-visible:bg-surface-elevated/30">{heading}</button> : <div className="flex min-h-16 items-center gap-2.5 p-3">{heading}</div>}
       {tooltip}
     </li>
   );
@@ -77,7 +77,7 @@ function DatasetDescription({ description }: { description: string }) {
   const id = useId();
   const expandable = description.length > 180;
   return (
-    <div className="min-w-0 rounded-xl bg-background/40 px-3.5 py-3">
+    <div className="min-w-0 rounded-sm bg-background/40 px-3.5 py-3">
       <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-foreground-secondary"><ChatIcon name="description" className="size-3.5 shrink-0" />Descripción</p>
       <p id={id} className={`break-words text-xs leading-relaxed text-foreground-secondary [overflow-wrap:anywhere] ${expandable && !expanded ? "line-clamp-3" : ""}`}>{formatSourceMessage(description)}</p>
       {expandable && <button type="button" onClick={() => setExpanded((current) => !current)} aria-expanded={expanded} aria-controls={id} className="mt-1.5 inline-flex min-h-7 items-center gap-1 rounded-md text-[11px] font-medium text-primary hover:underline underline-offset-4">{expanded ? "Ver menos" : "Ver más"}<ChatIcon name="chevron-down" className={`size-3 transition-transform ${expanded ? "rotate-180" : ""}`} /></button>}
@@ -95,13 +95,13 @@ function DatasetCard({ dataset }: { dataset: DatasetDetail }) {
     <p className="text-foreground-secondary">Usan solo los números válidos de una columna de texto. El contenido original se conserva.</p>
   </> : null);
   return (
-    <article className="min-w-0 rounded-2xl bg-surface/80 p-4 shadow-sm shadow-black/5 sm:p-5">
+    <article className="min-w-0 rounded-md bg-surface/80 p-4 border border-border/70 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><ChatIcon name="table" className="size-[18px]" /></span>
+          <span className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary"><ChatIcon name="table" className="size-[18px]" /></span>
           <h3 title={dataset.name} className="min-w-0 break-words text-sm font-semibold [overflow-wrap:anywhere]">{dataset.source_locator.sheet || dataset.name}</h3>
         </div>
-        <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-medium ${dataset.queryable ? "source-status-ready bg-primary/5" : "bg-surface-elevated/70 text-foreground-secondary"}`}>
+        <span className={`inline-flex items-center gap-1.5 rounded-sm px-2 py-1 text-[10px] font-medium ${dataset.queryable ? "source-status-ready bg-success/10" : "bg-surface-elevated/70 text-foreground-secondary"}`}>
           <ChatIcon name={dataset.queryable ? "check-circle" : "clock"} className="size-3.5 shrink-0" />
           {!dataset.is_active ? "Inactiva" : dataset.queryable ? "Disponible" : "No disponible"}
         </span>
@@ -116,14 +116,14 @@ function DatasetCard({ dataset }: { dataset: DatasetDetail }) {
       </div>
       <div className="mt-4 space-y-3">
         <Warnings warnings={dataset.quality_warnings} />
-        {Boolean(dataset.source_locator.possible_overlap?.length) && !hasOverlapWarning && <p className="flex items-start gap-2 rounded-xl bg-warning/5 px-3.5 py-3 text-xs leading-relaxed"><ChatIcon name="alert-triangle" className="mt-0.5 size-4 shrink-0 text-warning" />Algunos registros coinciden con otra tabla. Revisá las advertencias antes de combinar los datos.</p>}
+        {Boolean(dataset.source_locator.possible_overlap?.length) && !hasOverlapWarning && <p className="flex items-start gap-2 rounded-sm bg-warning/5 px-3.5 py-3 text-xs leading-relaxed"><ChatIcon name="alert-triangle" className="mt-0.5 size-4 shrink-0 text-warning" />Algunos registros coinciden con otra tabla. Revisá las advertencias antes de combinar los datos.</p>}
       </div>
       <section aria-label="Columnas detectadas" className="mt-4">
         <h4 className="mb-2.5 flex items-center gap-1.5 text-xs font-medium"><ChatIcon name="columns" className="size-3.5 text-foreground-secondary" />Columnas detectadas <span className="text-foreground-secondary">({originalColumns.length})</span></h4>
         <ul className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))] gap-2">{originalColumns.map((column) => <ColumnCard key={column.sql_name} column={column} columns={dataset.columns_metadata} />)}</ul>
       </section>
       {auxiliaryColumns.length > 0 && <details className="group mt-3">
-        <summary {...numericVersions.triggerProps} className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-lg py-1.5 text-xs text-foreground-secondary [&::-webkit-details-marker]:hidden"><ChatIcon name="calculator" className="size-3.5" />Versiones numéricas ({auxiliaryColumns.length})<ChatIcon name="chevron-down" className="size-3.5 transition-transform group-open:rotate-180" /></summary>
+        <summary {...numericVersions.triggerProps} className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-sm py-1.5 text-xs text-foreground-secondary [&::-webkit-details-marker]:hidden"><ChatIcon name="calculator" className="size-3.5" />Versiones numéricas ({auxiliaryColumns.length})<ChatIcon name="chevron-down" className="size-3.5 transition-transform group-open:rotate-180" /></summary>
         <ul className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))] gap-2">{auxiliaryColumns.map((column) => <ColumnCard key={column.sql_name} column={column} columns={dataset.columns_metadata} />)}</ul>
       </details>}
       {numericVersions.tooltip}
@@ -148,7 +148,7 @@ export function SourceDetail({ source, toggling, onToggle }: {
     : "El archivo está preparado. Estamos habilitando la búsqueda.";
   return (
     <div className="space-y-5">
-      <section aria-label="Estado de la fuente" className="rounded-2xl bg-surface/80 p-4 shadow-sm shadow-black/5 sm:p-5">
+      <section aria-label="Estado de la fuente" className="rounded-md bg-surface/80 p-4 border border-border/70 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <p role="status" aria-live="polite" className="flex min-w-0 flex-1 items-center gap-2.5 text-xs leading-relaxed sm:text-[13px]">
             <ChatIcon name={failed ? "alert-circle" : attention ? "alert-triangle" : prepared ? "check-circle" : "clock"} className={`size-5 shrink-0 ${failed ? "text-error" : attention ? "text-warning" : "text-primary"}`} />{statusMessage}
@@ -166,13 +166,13 @@ export function SourceDetail({ source, toggling, onToggle }: {
         <div className="mt-4 space-y-3">
           <Warnings warnings={warnings} title="Advertencias generales" />
           {typeof source.processing_report.warning_count === "number" && source.processing_report.warning_count > warnings.length && <p className="text-xs text-foreground-secondary">Hay {source.processing_report.warning_count} advertencias en total. Acá se muestran {warnings.length}.</p>}
-          {errors.length > 0 && <div role="alert" className="rounded-xl bg-error/5 px-3.5 py-3"><p className="flex items-center gap-2 text-xs font-medium"><ChatIcon name="alert-circle" className="size-4 shrink-0 text-error" />Error de preparación</p><ul className="mt-2 space-y-1.5 text-xs leading-relaxed">{errors.map((error, index) => <li key={index} className="break-words">{error}</li>)}</ul></div>}
-          {source.processing_report.semantic_index_error && <div className="rounded-xl bg-warning/5 px-3.5 py-3"><p className="flex items-center gap-2 text-xs font-medium"><ChatIcon name="alert-triangle" className="size-4 shrink-0 text-warning" />Búsqueda no disponible</p><p className="mt-2 text-xs leading-relaxed text-foreground-secondary">{prepared ? "No pudimos habilitar la búsqueda. Los datos preparados siguen guardados." : "No pudimos habilitar la búsqueda. Intentá actualizar en unos instantes."}</p></div>}
+          {errors.length > 0 && <div role="alert" className="rounded-sm bg-error/5 px-3.5 py-3"><p className="flex items-center gap-2 text-xs font-medium"><ChatIcon name="alert-circle" className="size-4 shrink-0 text-error" />Error de preparación</p><ul className="mt-2 space-y-1.5 text-xs leading-relaxed">{errors.map((error, index) => <li key={index} className="break-words">{error}</li>)}</ul></div>}
+          {source.processing_report.semantic_index_error && <div className="rounded-sm bg-warning/5 px-3.5 py-3"><p className="flex items-center gap-2 text-xs font-medium"><ChatIcon name="alert-triangle" className="size-4 shrink-0 text-warning" />Búsqueda no disponible</p><p className="mt-2 text-xs leading-relaxed text-foreground-secondary">{prepared ? "No pudimos habilitar la búsqueda. Los datos preparados siguen guardados." : "No pudimos habilitar la búsqueda. Intentá actualizar en unos instantes."}</p></div>}
         </div>
       </section>
       <section aria-labelledby="datasets-title" className="min-w-0">
         <h2 id="datasets-title" className="mb-3 flex items-center gap-2 text-sm font-semibold"><ChatIcon name="table" className="size-4 text-foreground-secondary" />Tablas detectadas <span className="font-normal text-foreground-secondary">({source.datasets.length})</span></h2>
-        {source.datasets.length === 0 ? <div className="flex items-center gap-3 rounded-2xl bg-surface/60 p-5 text-xs text-foreground-secondary"><ChatIcon name="table" className="size-6 shrink-0 opacity-60" /><p>{failed ? "No se encontraron tablas en este archivo." : "Las tablas van a aparecer cuando termine la preparación."}</p></div> : <div className="space-y-3">{source.datasets.map((dataset) => <DatasetCard key={dataset.id} dataset={dataset} />)}</div>}
+        {source.datasets.length === 0 ? <div className="flex items-center gap-3 rounded-md bg-surface/60 p-5 text-xs text-foreground-secondary"><ChatIcon name="table" className="size-6 shrink-0 opacity-60" /><p>{failed ? "No se encontraron tablas en este archivo." : "Las tablas van a aparecer cuando termine la preparación."}</p></div> : <div className="space-y-3">{source.datasets.map((dataset) => <DatasetCard key={dataset.id} dataset={dataset} />)}</div>}
       </section>
     </div>
   );

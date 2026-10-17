@@ -19,7 +19,7 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
       <ol className="space-y-4">
         {messages.map((message) => (
           <li key={message.id} data-user-message className="flex justify-end">
-            <div className="max-w-[90%] rounded-2xl rounded-br-md border border-primary/20 bg-primary/10 px-4 py-3 text-sm leading-relaxed text-foreground sm:max-w-[78%] sm:px-5 sm:text-[15px]">
+            <div className="max-w-[90%] rounded-md rounded-br-md border border-primary/20 bg-primary/10 px-4 py-3 text-sm leading-relaxed text-foreground sm:max-w-[78%] sm:px-5 sm:text-[15px]">
               <span className="sr-only">Vos: </span>
               <p className="whitespace-pre-wrap [overflow-wrap:anywhere]">{message.content}</p>
             </div>

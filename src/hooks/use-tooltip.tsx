@@ -105,7 +105,7 @@ export function useTooltip<T extends HTMLElement>(content: ReactNode) {
       popover="manual"
       onPointerEnter={clearTimers}
       onPointerLeave={scheduleClose}
-      className="fixed inset-auto m-0 w-max max-w-[min(288px,calc(100vw-24px))] max-h-[calc(100dvh-24px)] overflow-y-auto rounded-xl border-0 bg-surface-elevated p-3.5 text-left text-xs leading-relaxed text-foreground shadow-xl shadow-black/20 backdrop:bg-transparent"
+      className="fixed inset-auto m-0 w-max max-w-[min(288px,calc(100vw-24px))] max-h-[calc(100dvh-24px)] overflow-y-auto rounded-sm border border-border bg-surface-elevated p-3.5 text-left text-xs leading-relaxed text-foreground shadow-xl shadow-black/20 backdrop:bg-transparent"
     ><div className="space-y-2">{content}</div></div> : null,
   };
 }
