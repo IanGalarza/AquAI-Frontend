@@ -28,6 +28,14 @@ export function useSourceResource<T>(
     setRevision((current) => current + 1);
   }, [key]);
 
+  const update = useCallback((updater: (data: T) => T) => {
+    controllerRef.current?.abort();
+    setState((current) => current.key !== null && current.data !== null
+      ? { ...current, data: updater(current.data), loading: false, error: null }
+      : current);
+    setRevision((current) => current + 1);
+  }, []);
+
   useEffect(() => {
     if (key === null) return;
     let active = true;
@@ -71,6 +79,6 @@ export function useSourceResource<T>(
     data: state.key === key ? state.data : null,
     loading: key !== null && (state.key !== key || state.loading),
     error: state.key === key ? state.error : null,
-    refresh, replace,
+    refresh, replace, update,
   };
 }

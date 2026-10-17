@@ -3,14 +3,17 @@ export type SemanticIndexStatus = "pending" | "processing" | "ready" | "failed";
 export type SourceSort = "newest" | "oldest" | "name_asc" | "name_desc";
 export type SourceListFilters = { name?: string; sort?: SourceSort };
 
-export type SourceAccepted = {
+export type SourceState = {
   id: string;
   processing_status: ProcessingStatus;
   semantic_index_status: SemanticIndexStatus;
-  duplicate: boolean;
 };
 
-export type SourceListItem = SourceAccepted & {
+export type SourceAccepted = { id: string; duplicate: boolean };
+
+export type SourceActivation = SourceState & { isActive: boolean; queryable: boolean };
+
+export type SourceListItem = SourceState & {
   name: string;
   file_type: string;
   file_size_bytes: number;
@@ -33,9 +36,9 @@ export type ColumnMetadata = {
   unit?: string | null;
   meaning?: string | null;
   numeric_eligible?: boolean;
-  representation?: string;
-  derived_from?: string;
-  excluded_count?: number;
+  representation?: string | null;
+  derived_from?: string | null;
+  excluded_count?: number | null;
   header_missing?: boolean;
 };
 
@@ -43,40 +46,29 @@ export type DatasetDetail = {
   id: string;
   name: string;
   description: string | null;
-  semantic_description: string | null;
   source_locator: {
-    sheet?: string;
-    range?: string;
-    possible_overlap?: unknown[];
-    [key: string]: unknown;
+    sheet?: string | null;
+    range?: string | null;
+    has_possible_overlap: boolean;
   };
-  physical_table_name: string | null;
-  version: number;
   row_count: number;
   columns_metadata: ColumnMetadata[];
   quality_warnings: string[];
   is_active: boolean;
   queryable: boolean;
-  semantic_point_id: string;
 };
 
-export type SourceDetail = SourceAccepted & {
-  name: string;
+export type SourceDetail = SourceState & {
   original_filename: string;
   file_type: string;
-  mime_type: string;
   file_size_bytes: number;
   description: string | null;
   isActive: boolean;
   created_at: string;
-  updated_at: string | null;
   processing_report: {
-    summary?: string;
     warnings?: string[];
     warning_count?: number;
-    errors?: (string | { code?: string; message?: string })[];
-    semantic_index_error?: string;
-    [key: string]: unknown;
+    errors?: (string | { code?: string | null; message?: string | null })[];
   };
   datasets: DatasetDetail[];
   queryable: boolean;

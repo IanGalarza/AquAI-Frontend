@@ -88,7 +88,7 @@ function DatasetDescription({ description }: { description: string }) {
 function DatasetCard({ dataset }: { dataset: DatasetDetail }) {
   const originalColumns = dataset.columns_metadata.filter((column) => column.representation !== "numeric_projection");
   const auxiliaryColumns = dataset.columns_metadata.filter((column) => column.representation === "numeric_projection");
-  const description = dataset.semantic_description?.trim() || dataset.description?.trim();
+  const description = dataset.description?.trim();
   const hasOverlapWarning = dataset.quality_warnings.some((warning) => /coincid|solap/i.test(warning));
   const numericVersions = useTooltip<HTMLElement>(auxiliaryColumns.length > 0 ? <>
     <p className="flex items-center gap-2 font-medium"><ChatIcon name="calculator" className="size-4 shrink-0 text-primary" />Versiones numéricas</p>
@@ -116,7 +116,7 @@ function DatasetCard({ dataset }: { dataset: DatasetDetail }) {
       </div>
       <div className="mt-4 space-y-3">
         <Warnings warnings={dataset.quality_warnings} />
-        {Boolean(dataset.source_locator.possible_overlap?.length) && !hasOverlapWarning && <p className="flex items-start gap-2 rounded-sm bg-warning/5 px-3.5 py-3 text-xs leading-relaxed"><ChatIcon name="alert-triangle" className="mt-0.5 size-4 shrink-0 text-warning" />Algunos registros coinciden con otra tabla. Revisá las advertencias antes de combinar los datos.</p>}
+        {dataset.source_locator.has_possible_overlap && !hasOverlapWarning && <p className="flex items-start gap-2 rounded-sm bg-warning/5 px-3.5 py-3 text-xs leading-relaxed"><ChatIcon name="alert-triangle" className="mt-0.5 size-4 shrink-0 text-warning" />Algunos registros coinciden con otra tabla. Revisá las advertencias antes de combinar los datos.</p>}
       </div>
       <section aria-label="Columnas detectadas" className="mt-4">
         <h4 className="mb-2.5 flex items-center gap-1.5 text-xs font-medium"><ChatIcon name="columns" className="size-3.5 text-foreground-secondary" />Columnas detectadas <span className="text-foreground-secondary">({originalColumns.length})</span></h4>
@@ -158,7 +158,7 @@ export function SourceDetail({ source, toggling, onToggle }: {
         <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4 lg:grid-cols-4">
           <Information label="Cargado" icon="calendar"><time dateTime={source.created_at}>{formatDate(source.created_at)}</time></Information>
           <Information label="Preparación" icon="refresh"><ProcessingBadge status={source.processing_status} compact /></Information>
-          <Information label="Búsqueda" icon="search"><SemanticBadge status={source.semantic_index_status} compact /></Information>
+          <Information label="Búsqueda" icon="search"><SemanticBadge status={source.semantic_index_status} active={source.isActive} compact /></Information>
           <Information label="Consultas" icon="message">{source.queryable ? "Disponible" : "No disponible"}</Information>
         </dl>
         {source.description && <p className="mt-4 break-words text-xs leading-relaxed text-foreground-secondary">{formatSourceMessage(source.description)}</p>}
@@ -167,7 +167,7 @@ export function SourceDetail({ source, toggling, onToggle }: {
           <Warnings warnings={warnings} title="Advertencias generales" />
           {typeof source.processing_report.warning_count === "number" && source.processing_report.warning_count > warnings.length && <p className="text-xs text-foreground-secondary">Hay {source.processing_report.warning_count} advertencias en total. Acá se muestran {warnings.length}.</p>}
           {errors.length > 0 && <div role="alert" className="rounded-sm bg-error/5 px-3.5 py-3"><p className="flex items-center gap-2 text-xs font-medium"><ChatIcon name="alert-circle" className="size-4 shrink-0 text-error" />Error de preparación</p><ul className="mt-2 space-y-1.5 text-xs leading-relaxed">{errors.map((error, index) => <li key={index} className="break-words">{error}</li>)}</ul></div>}
-          {source.processing_report.semantic_index_error && <div className="rounded-sm bg-warning/5 px-3.5 py-3"><p className="flex items-center gap-2 text-xs font-medium"><ChatIcon name="alert-triangle" className="size-4 shrink-0 text-warning" />Búsqueda no disponible</p><p className="mt-2 text-xs leading-relaxed text-foreground-secondary">{prepared ? "No pudimos habilitar la búsqueda. Los datos preparados siguen guardados." : "No pudimos habilitar la búsqueda. Intentá actualizar en unos instantes."}</p></div>}
+          {source.semantic_index_status === "failed" && <div className="rounded-sm bg-warning/5 px-3.5 py-3"><p className="flex items-center gap-2 text-xs font-medium"><ChatIcon name="alert-triangle" className="size-4 shrink-0 text-warning" />Búsqueda no disponible</p><p className="mt-2 text-xs leading-relaxed text-foreground-secondary">{prepared ? "No pudimos habilitar la búsqueda. Los datos preparados siguen guardados." : "No pudimos habilitar la búsqueda. Intentá actualizar en unos instantes."}</p></div>}
         </div>
       </section>
       <section aria-labelledby="datasets-title" className="min-w-0">

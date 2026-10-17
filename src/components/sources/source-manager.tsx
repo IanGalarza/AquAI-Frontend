@@ -4,14 +4,17 @@ import { useCallback, useEffect, useRef, useState, type DragEvent, type FormEven
 import { AquaiShell } from "../aquai-shell";
 import { ChatIcon } from "../chat/chat-icon";
 import { useSourceResource } from "@/hooks/use-source-resource";
-import { getSource, listSources, setSourceActive, uploadSource } from "@/services/backend";
+import { useSourceActivation } from "@/hooks/use-source-activation";
+import { useTransientNotice } from "@/hooks/use-transient-notice";
+import { getSource, listSources, uploadSource } from "@/services/backend";
 import { errorMessage } from "@/services/api";
-import type { SourceDetail as SourceDetailData, SourceListItem, SourceSort } from "@/types/sources";
+import type { SourceSort } from "@/types/sources";
 import { formatBytes, MAX_UPLOAD_BYTES, MINIMUM_CATALOG_LOADING_MS, needsListPolling, needsSourcePolling, validateSourceFile } from "@/utils/sources";
 import { SourceDetail } from "./source-detail";
 import { SourceDetailModal } from "./source-detail-modal";
 import { SourceListRow } from "./source-list-row";
 import { SourceError } from "./source-status";
+import { SourceNotice } from "./source-notice";
 
 const secondaryButton = "inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-border bg-surface/65 px-4 text-xs font-medium transition enabled:hover:border-primary/50 enabled:hover:bg-primary/5 disabled:cursor-default disabled:opacity-45";
 
@@ -27,22 +30,37 @@ export function SourceManager({ onBack }: SourceManagerProps) {
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const notifications = useTransientNotice();
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [toggling, setToggling] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const dragDepthRef = useRef(0);
   const viewportRef = useRef<HTMLDivElement>(null);
   const controllers = useRef(new Set<AbortController>());
   const uploadLock = useRef(false);
-  const activationLocks = useRef(new Set<string>());
   const selectedRef = useRef<string | null>(null);
 
   const loadList = useCallback((signal: AbortSignal) => listSources(query.page, signal, query), [query]);
   const loadDetail = useCallback((signal: AbortSignal) => getSource(selectedId!, signal), [selectedId]);
   const catalog = useSourceResource(JSON.stringify(query), loadList, needsListPolling, MINIMUM_CATALOG_LOADING_MS);
   const detail = useSourceResource(selectedId, loadDetail, needsSourcePolling);
+  const activation = useSourceActivation({
+    onSuccess: (updated) => {
+      catalog.update((current) => ({ ...current, items: current.items.map((source) => source.id === updated.id
+        ? { ...source, isActive: updated.isActive, processing_status: updated.processing_status, semantic_index_status: updated.semantic_index_status }
+        : source) }));
+      if (selectedRef.current === updated.id) detail.update((current) => current.id === updated.id ? ({
+        ...current, ...updated,
+        datasets: updated.isActive ? current.datasets : current.datasets.map((dataset) => ({ ...dataset, queryable: false })),
+      }) : current);
+      notifications.show(updated.isActive ? "Fuente activada." : "Fuente desactivada.");
+    },
+    onError: (error) => {
+      notifications.show(errorMessage(error), "error");
+      catalog.refresh();
+      if (selectedRef.current) detail.refresh();
+    },
+  });
 
   useEffect(() => {
     const pending = controllers.current;
@@ -57,11 +75,10 @@ export function SourceManager({ onBack }: SourceManagerProps) {
     return () => clearTimeout(timer);
   }, [search, query.name]);
 
-  function selectSource(id: string | null, keepNotice = false) {
+  function selectSource(id: string | null) {
     selectedRef.current = id;
     setSelectedId(id);
     setActionError(null);
-    if (!keepNotice) setNotice(null);
   }
 
   function selectUploadFile(selected: File | null) {
@@ -97,18 +114,18 @@ export function SourceManager({ onBack }: SourceManagerProps) {
     setUploading(true);
     setFileError(null);
     setActionError(null);
-    setNotice(null);
+    notifications.dismiss();
     try {
       const accepted = await uploadSource(file, controller.signal);
       if (controller.signal.aborted) return;
-      setNotice(accepted.duplicate
+      notifications.show(accepted.duplicate
         ? "Este archivo ya está cargado. Abrimos su detalle para que puedas revisarlo."
-        : "Archivo recibido. Podés seguir su preparación a continuación.");
+        : "Archivo recibido. Podés seguir su preparación a continuación.", "info");
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
       setQuery((current) => ({ ...current, page: 1 }));
       catalog.refresh();
-      selectSource(accepted.id, true);
+      selectSource(accepted.id);
     } catch (error) {
       if (!controller.signal.aborted) setActionError(errorMessage(error));
     } finally {
@@ -118,33 +135,13 @@ export function SourceManager({ onBack }: SourceManagerProps) {
     }
   }
 
-  async function toggleSource(source: SourceListItem | SourceDetailData) {
-    if (activationLocks.current.has(source.id)) return;
-    activationLocks.current.add(source.id);
-    const controller = new AbortController();
-    controllers.current.add(controller);
-    setToggling((current) => [...current, source.id]);
-    setActionError(null);
-    try {
-      const updated = await setSourceActive(source.id, !source.isActive, controller.signal);
-      if (controller.signal.aborted) return;
-      if (selectedRef.current === updated.id) detail.replace(updated);
-      catalog.refresh();
-      setNotice(updated.isActive ? "La fuente se activó. Vas a poder consultarla cuando termine su preparación." : "La fuente se desactivó. El archivo y sus tablas se conservan.");
-    } catch (error) {
-      if (!controller.signal.aborted) setActionError(errorMessage(error));
-    } finally {
-      controllers.current.delete(controller);
-      activationLocks.current.delete(source.id);
-      if (!controller.signal.aborted) setToggling((current) => current.filter((id) => id !== source.id));
-    }
-  }
-
   const list = catalog.data;
+  const selectedSource = detail.data;
   const totalPages = list ? Math.max(1, Math.ceil(list.total / list.page_size)) : 1;
 
   return (
     <AquaiShell title="Administrar fuentes" subdued sources onBack={onBack}>
+      {!selectedId && <SourceNotice notice={notifications.notice} onDismiss={notifications.dismiss} />}
       <div ref={viewportRef} id="sources-content" tabIndex={-1} onScroll={(event) => setShowScrollTop(event.currentTarget.scrollTop > 320)} className={`relative z-10 min-h-0 flex-1 overflow-x-hidden overscroll-y-contain ${selectedId ? "overflow-y-hidden" : "overflow-y-auto"}`}>
         <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col gap-5 px-4 py-5 sm:px-7 sm:py-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -158,7 +155,6 @@ export function SourceManager({ onBack }: SourceManagerProps) {
               <button type="button" disabled={catalog.loading} onClick={catalog.refresh} className={`${secondaryButton} shrink-0`} aria-label="Actualizar listado"><ChatIcon name="refresh" className={`size-4 ${catalog.loading ? "animate-spin motion-reduce:animate-none" : ""}`} />Actualizar</button>
             </div>
           </div>
-          {!selectedId && notice && <p role="status" aria-live="polite" className="rounded-sm border border-primary/20 bg-primary/5 px-4 py-3 text-sm leading-relaxed">{notice}</p>}
           {!selectedId && actionError && <SourceError message={actionError} />}
 
           <section
@@ -203,18 +199,18 @@ export function SourceManager({ onBack }: SourceManagerProps) {
               {catalog.error && <div className="mb-4"><SourceError message={catalog.error} onRetry={catalog.refresh} /></div>}
               {catalog.loading && !list && <div role="status" aria-live="polite" className="flex min-h-60 flex-1 flex-col items-center justify-center gap-5 px-4 py-12 text-center text-base font-medium text-foreground-secondary sm:text-lg"><span aria-hidden="true" className="size-12 shrink-0 animate-spin rounded-full border-[3px] border-primary/20 border-t-primary motion-reduce:animate-none sm:size-14" /><span>Obteniendo tus fuentes…</span></div>}
               {list && list.items.length === 0 && <div className="rounded-sm border border-dashed border-border bg-surface/40 px-5 py-10 text-center"><ChatIcon name="database" className="mx-auto size-8 text-primary" /><p className="mt-4 text-sm font-medium">{list.total > 0 ? "No hay fuentes en esta página" : query.name ? "No se encontraron fuentes" : "Todavía no hay fuentes"}</p><p className="mt-2 text-sm text-foreground-secondary">{list.total > 0 ? "Volvé a la página anterior para ver las fuentes disponibles." : query.name ? "Probá con otro nombre o limpiá la búsqueda." : "Subí un CSV o XLSX para preparar tus primeras tablas."}</p>{query.name && <button type="button" onClick={() => setSearch("")} className={`${secondaryButton} mt-4`}>Limpiar búsqueda</button>}</div>}
-              {list && list.items.length > 0 && <ul aria-label="Listado de fuentes" aria-busy={catalog.loading} className="space-y-2.5">{list.items.map((source) => <SourceListRow key={source.id} source={source} busy={toggling.includes(source.id)} onSelect={() => selectSource(source.id)} onToggle={() => void toggleSource(source)} />)}</ul>}
+              {list && list.items.length > 0 && <ul aria-label="Listado de fuentes" aria-busy={catalog.loading} className="space-y-2.5">{list.items.map((source) => <SourceListRow key={source.id} source={source} busy={activation.pending.has(source.id)} onSelect={() => selectSource(source.id)} onToggle={() => void activation.toggle(source)} />)}</ul>}
               {list && list.total > 0 && <nav aria-label="Páginas de fuentes" className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-foreground-secondary"><span>Página {list.page} de {totalPages} · {list.total} fuentes</span><div className="flex gap-2"><button type="button" disabled={catalog.loading || query.page <= 1} onClick={() => setQuery((current) => ({ ...current, page: current.page - 1 }))} className={secondaryButton}>Anterior</button><button type="button" disabled={catalog.loading || query.page >= totalPages} onClick={() => setQuery((current) => ({ ...current, page: current.page + 1 }))} className={secondaryButton}>Siguiente</button></div></nav>}
             </section>
         </div>
       </div>
       {showScrollTop && <button type="button" onClick={() => viewportRef.current?.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" })} aria-label="Volver arriba" title="Volver arriba" className="absolute bottom-5 right-5 z-20 grid size-11 place-items-center rounded-sm border border-action bg-action text-on-action shadow-sm transition hover:bg-action-hover"><ChatIcon name="arrow-up" className="size-5" /></button>}
-      {selectedId && <SourceDetailModal source={detail.data ?? list?.items.find((source) => source.id === selectedId) ?? null} onClose={() => selectSource(null)} onRefresh={detail.refresh} refreshing={detail.loading}>
-        {notice && <p role="status" aria-live="polite" className="rounded-sm border border-primary/20 bg-primary/5 px-4 py-3 text-sm leading-relaxed">{notice}</p>}
+      {selectedId && <SourceDetailModal source={selectedSource ?? list?.items.find((source) => source.id === selectedId) ?? null} onClose={() => selectSource(null)} onRefresh={detail.refresh} refreshing={detail.loading}>
+        <SourceNotice notice={notifications.notice} onDismiss={notifications.dismiss} />
         {actionError && <SourceError message={actionError} />}
         {detail.error && <SourceError message={detail.error} onRetry={detail.refresh} />}
         {detail.loading && !detail.data && <div role="status" className="flex min-h-52 flex-col items-center justify-center gap-4 text-sm text-foreground-secondary"><span aria-hidden="true" className="size-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary motion-reduce:animate-none" /><span>Consultando la fuente…</span></div>}
-        {detail.data && <SourceDetail source={detail.data} toggling={toggling.includes(detail.data.id)} onToggle={() => void toggleSource(detail.data!)} />}
+        {selectedSource && <SourceDetail source={selectedSource} toggling={activation.pending.has(selectedSource.id)} onToggle={() => void activation.toggle(selectedSource)} />}
       </SourceDetailModal>}
     </AquaiShell>
   );

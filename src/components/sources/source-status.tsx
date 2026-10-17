@@ -1,5 +1,5 @@
 import type { ProcessingStatus, SemanticIndexStatus } from "@/types/sources";
-import { formatSourceMessage } from "@/utils/sources";
+import { formatSourceMessage } from "../../utils/sources";
 
 const processingLabels: Record<ProcessingStatus, string> = {
   uploaded: "En cola", processing: "Preparando", ready: "Preparada",
@@ -29,8 +29,8 @@ export function ProcessingBadge({ status, compact = false }: { status: Processin
   return <Badge label={label} status={status} compact={compact} busy={status === "processing" || status === "uploaded"} />;
 }
 
-export function SemanticBadge({ status, compact = false }: { status: SemanticIndexStatus; compact?: boolean }) {
-  return <Badge label={indexLabels[status]} status={status} compact={compact} busy={status === "processing"} />;
+export function SemanticBadge({ status, active, compact = false }: { status: SemanticIndexStatus; active: boolean; compact?: boolean }) {
+  return <Badge label={active ? indexLabels[status] : "Desactivada"} status={active ? status : "inactive"} compact={compact} busy={active && status === "processing"} />;
 }
 
 export function SourceToggle({ active, busy, name, onToggle, compact = false }: {
@@ -40,9 +40,11 @@ export function SourceToggle({ active, busy, name, onToggle, compact = false }: 
     <button type="button" role="switch" aria-checked={active} aria-label={`Fuente activa: ${name}`}
       disabled={busy} onClick={onToggle} aria-busy={busy}
       title={busy ? "Guardando…" : active ? "Desactivar fuente" : "Activar fuente"}
-      className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-sm px-1 text-xs text-foreground-secondary disabled:cursor-wait disabled:opacity-50">
-      <span aria-hidden="true" className={`relative h-6 w-10 rounded-sm border transition ${active ? "border-action bg-action" : "border-border bg-surface-elevated"}`}>
-        <span className={`absolute left-0.5 top-0.5 size-[18px] rounded-[2px] bg-white shadow-sm transition-transform ${active ? "translate-x-4" : "translate-x-0"}`} />
+      className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-sm px-1 text-xs text-foreground-secondary disabled:cursor-wait">
+      <span aria-hidden="true" className={`relative h-6 w-10 rounded-full border transition ${active ? "border-action bg-action" : "border-border bg-surface-elevated"}`}>
+        <span className={`absolute left-0.5 top-0.5 grid size-[18px] place-items-center rounded-full bg-white shadow-sm transition-transform ${active ? "translate-x-4" : "translate-x-0"}`}>
+          {busy && <span className="size-3 animate-spin rounded-full border-2 border-action border-r-transparent motion-reduce:animate-none" />}
+        </span>
       </span>
       <span className={compact ? "sr-only" : undefined}>{busy ? "Guardando…" : active ? "Activa" : "Inactiva"}</span>
     </button>

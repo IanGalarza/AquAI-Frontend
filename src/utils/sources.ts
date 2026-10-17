@@ -1,4 +1,4 @@
-import type { ProcessingStatus, SourceAccepted, SourceDetail, SourceList } from "../types/sources";
+import type { ProcessingStatus, SourceDetail, SourceList, SourceState } from "../types/sources";
 
 const configuredLimit = Number(process.env.NEXT_PUBLIC_MAX_UPLOAD_BYTES || 10 * 1024 * 1024);
 export const MAX_UPLOAD_BYTES = Number.isFinite(configuredLimit) && configuredLimit > 0
@@ -19,7 +19,7 @@ export function isPrepared(status: ProcessingStatus): boolean {
   return status === "ready" || status === "ready_with_warnings";
 }
 
-export function needsSourcePolling(source: SourceAccepted): boolean {
+export function needsSourcePolling(source: SourceState): boolean {
   return source.processing_status === "uploaded" || source.processing_status === "processing" ||
     (isPrepared(source.processing_status) && (source.semantic_index_status === "pending" || source.semantic_index_status === "processing"));
 }
