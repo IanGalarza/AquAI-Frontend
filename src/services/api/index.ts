@@ -6,7 +6,7 @@ const httpMessages: Record<number, string> = {
   409: "El estado de la fuente no permite esta operación. Actualizá la vista.",
   413: "El archivo supera el tamaño máximo permitido por el backend.",
   422: "El backend no pudo validar el archivo o la solicitud.",
-  503: "La persistencia o el procesamiento no están disponibles. Intentá nuevamente en unos instantes.",
+  503: "Las fuentes no se encuentran disponibles debido a un error. Intentá nuevamente en unos instantes.",
 };
 
 export class ApiError extends Error {
@@ -25,7 +25,7 @@ export function errorMessage(error: unknown): string {
   if (error instanceof Error && error.name === "TimeoutError") {
     return "La solicitud tardó demasiado. Podés volver a intentarlo; si estabas subiendo un archivo, el backend podría haberlo recibido.";
   }
-  return "No se pudo conectar con el backend. Verificá que esté disponible y que la URL y CORS estén configurados.";
+  return "No pudimos conectarnos con el servicio de fuentes. Intentá nuevamente en unos instantes.";
 }
 
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -39,7 +39,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
       ? detail.map((item: { msg?: string }) => item.msg).filter(Boolean).join(" ")
       : null;
     const fallback = httpMessages[response.status] || "No se pudo completar la solicitud.";
-    throw new ApiError(response.status, explanation ? `${fallback} ${explanation}` : fallback);
+    throw new ApiError(response.status, response.status === 503 || !explanation ? fallback : `${fallback} ${explanation}`);
   }
   if (body === null) throw new ApiError(502, "El backend devolvió una respuesta vacía o ilegible. Intentá nuevamente.");
   return body as T;

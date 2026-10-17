@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
 import { AquaiShell } from "../aquai-shell";
 import { ChatIcon } from "../chat/chat-icon";
 import { useSourceResource } from "@/hooks/use-source-resource";
@@ -29,9 +29,10 @@ export function SourceManager({ onBack }: SourceManagerProps) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [toggling, setToggling] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
+  const dragDepthRef = useRef(0);
   const viewportRef = useRef<HTMLDivElement>(null);
   const controllers = useRef(new Set<AbortController>());
   const uploadLock = useRef(false);
@@ -56,22 +57,33 @@ export function SourceManager({ onBack }: SourceManagerProps) {
     return () => clearTimeout(timer);
   }, [search, query.name]);
 
-  useEffect(() => {
-    function focusSearch(event: KeyboardEvent) {
-      if (!selectedRef.current && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k" && searchRef.current) {
-        event.preventDefault();
-        searchRef.current.focus();
-      }
-    }
-    document.addEventListener("keydown", focusSearch);
-    return () => document.removeEventListener("keydown", focusSearch);
-  }, []);
-
   function selectSource(id: string | null, keepNotice = false) {
     selectedRef.current = id;
     setSelectedId(id);
     setActionError(null);
     if (!keepNotice) setNotice(null);
+  }
+
+  function selectUploadFile(selected: File | null) {
+    setFile(selected);
+    setFileError(selected ? validateSourceFile(selected) : null);
+    setActionError(null);
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  function dropUploadFile(event: DragEvent<HTMLElement>) {
+    if (!event.dataTransfer.types.includes("Files")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dragDepthRef.current = 0;
+    setIsDragging(false);
+    if (uploadLock.current) return;
+    if (event.dataTransfer.files.length !== 1) {
+      selectUploadFile(null);
+      setFileError("Seleccioná o arrastrá un solo archivo por vez.");
+      return;
+    }
+    selectUploadFile(event.dataTransfer.files[0]);
   }
 
   async function handleUpload(event: FormEvent<HTMLFormElement>) {
@@ -141,8 +153,7 @@ export function SourceManager({ onBack }: SourceManagerProps) {
               <div className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-surface/45 px-3 focus-within:border-primary/60 sm:w-64">
                 <ChatIcon name="search" className="size-4 shrink-0 text-foreground-secondary" />
                 <label htmlFor="source-search" className="sr-only">Buscar fuentes</label>
-                <input ref={searchRef} id="source-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} maxLength={255} placeholder="Buscar fuentes…" autoComplete="off" aria-keyshortcuts="Control+k Meta+k" className="h-10 w-full min-w-0 bg-transparent text-xs outline-none placeholder:text-foreground-secondary" />
-                <kbd aria-hidden="true" className="hidden shrink-0 rounded border border-border bg-surface-elevated/40 px-1.5 py-0.5 text-[10px] text-foreground-secondary sm:block">Ctrl K</kbd>
+                <input id="source-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} maxLength={255} placeholder="Buscar fuentes…" autoComplete="off" className="h-10 w-full min-w-0 bg-transparent text-xs outline-none placeholder:text-foreground-secondary" />
               </div>
               <button type="button" disabled={catalog.loading} onClick={catalog.refresh} className={`${secondaryButton} shrink-0`} aria-label="Actualizar listado"><ChatIcon name="refresh" className={`size-4 ${catalog.loading ? "animate-spin motion-reduce:animate-none" : ""}`} />Actualizar</button>
             </div>
@@ -150,24 +161,41 @@ export function SourceManager({ onBack }: SourceManagerProps) {
           {!selectedId && notice && <p role="status" aria-live="polite" className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm leading-relaxed">{notice}</p>}
           {!selectedId && actionError && <SourceError message={actionError} />}
 
-            <section aria-labelledby="upload-title" className="rounded-xl border border-dashed border-primary/40 bg-primary/[0.035] px-4 py-4 sm:px-5">
-              <form onSubmit={handleUpload} className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex min-w-0 flex-1 items-center gap-3.5">
-                  <span className="grid size-12 shrink-0 place-items-center rounded-full bg-primary/10 text-primary"><ChatIcon name="cloud-upload" className="size-6" /></span>
-                  <div className="min-w-0"><h2 id="upload-title" className="text-sm font-semibold">Subí un archivo de datos</h2><p id="upload-help" className="mt-1 text-xs text-foreground-secondary">CSV o XLSX · Hasta {formatBytes(MAX_UPLOAD_BYTES)}</p>
-                    {file && <p id="selected-file" className="mt-1.5 break-all text-xs text-foreground-secondary">{file.name} · {formatBytes(file.size)}</p>}
-                    {fileError && <p id="file-error" role="alert" className="mt-1.5 text-xs leading-relaxed text-error">{fileError}</p>}
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <input ref={inputRef} id="source-file" type="file" hidden accept=".csv,.xlsx" disabled={uploading} aria-label="Archivo CSV o XLSX" aria-describedby="upload-help" aria-invalid={Boolean(fileError)}
-                    onChange={(event) => { const selected = event.currentTarget.files?.[0] || null; setFile(selected); setFileError(selected ? validateSourceFile(selected) : null); setActionError(null); }}
-                  />
-                  <button type="button" disabled={uploading} onClick={() => inputRef.current?.click()} className={`${secondaryButton} flex-1 md:flex-none`}><ChatIcon name="folder" className="size-4" />Seleccionar archivo</button>
-                  <button type="submit" disabled={!file || Boolean(fileError) || uploading} className="new-conversation inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-xs font-semibold transition enabled:hover:bg-primary-light disabled:cursor-default disabled:opacity-45 md:flex-none"><ChatIcon name="upload" className="size-4" />{uploading ? "Enviando…" : "Subir archivo"}</button>
-                </div>
-              </form>
-            </section>
+          <section
+            aria-labelledby="upload-title"
+            onDragEnter={(event) => {
+              if (!event.dataTransfer.types.includes("Files") || uploadLock.current) return;
+              event.preventDefault();
+              dragDepthRef.current += 1;
+              setIsDragging(true);
+            }}
+            onDragOver={(event) => {
+              if (!event.dataTransfer.types.includes("Files")) return;
+              event.preventDefault();
+              event.dataTransfer.dropEffect = uploadLock.current ? "none" : "copy";
+            }}
+            onDragLeave={(event) => {
+              if (!event.dataTransfer.types.includes("Files")) return;
+              dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+              if (dragDepthRef.current === 0) setIsDragging(false);
+            }}
+            onDrop={dropUploadFile}
+            className={`rounded-2xl border border-dashed px-4 py-6 transition-colors sm:px-6 ${isDragging ? "border-primary bg-primary/10" : "border-primary/25 bg-primary/[0.025]"}`}
+          >
+            <form onSubmit={handleUpload} className="flex min-h-48 flex-col items-center justify-center gap-4 text-center">
+              <input ref={inputRef} id="source-file" type="file" hidden accept=".csv,.xlsx" disabled={uploading} aria-label="Archivo CSV o XLSX" aria-describedby="upload-help" aria-invalid={Boolean(fileError)} onChange={(event) => selectUploadFile(event.currentTarget.files?.[0] || null)} />
+              <div className="flex flex-col items-center gap-3">
+            <h2 id="upload-title"><label htmlFor="source-file" className={`flex flex-col items-center gap-3 ${uploading ? "cursor-wait" : "cursor-pointer"}`}><span className="grid size-14 place-items-center rounded-2xl bg-primary/10 text-primary"><ChatIcon name="cloud-upload" className="size-7" /></span><span className="text-sm font-semibold sm:text-base">{isDragging ? "Soltá el archivo acá" : "Seleccioná un archivo o arrastralo acá"}</span></label></h2>
+                <p id="upload-help" className="text-xs text-foreground-secondary">CSV o XLSX · Un archivo por vez · Hasta {formatBytes(MAX_UPLOAD_BYTES)}</p>
+              </div>
+              {file && <p id="selected-file" className="max-w-full break-all text-xs text-foreground-secondary">{file.name} · {formatBytes(file.size)}</p>}
+              {fileError && <p id="file-error" role="alert" className="max-w-md text-xs leading-relaxed text-error">{fileError}</p>}
+              <div className="flex flex-wrap items-center justify-center gap-2.5">
+                <button type="button" disabled={uploading} onClick={() => inputRef.current?.click()} className={secondaryButton}><ChatIcon name="folder" className="size-4" />Seleccionar archivo</button>
+                <button type="submit" disabled={!file || Boolean(fileError) || uploading} className="new-conversation inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-xs font-semibold transition enabled:hover:bg-primary-light disabled:cursor-default disabled:opacity-45"><ChatIcon name="upload" className="size-4" />{uploading ? "Enviando…" : "Subir archivo"}</button>
+              </div>
+            </form>
+          </section>
             <section aria-labelledby="source-list-title" className="flex min-w-0 flex-1 flex-col">
               <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2.5"><h2 id="source-list-title" className="text-base font-semibold">Fuentes</h2>{list && <span className="grid min-h-6 min-w-6 place-items-center rounded-full bg-surface-elevated/70 px-1.5 text-xs text-foreground-secondary">{list.total}</span>}</div>
                 <div className="flex items-center gap-2.5"><label htmlFor="source-sort" className="text-xs text-foreground-secondary">Ordenar por:</label><div className="relative"><ChatIcon name="clock" className="pointer-events-none absolute left-3 top-2.5 size-4 text-foreground-secondary" /><select id="source-sort" value={query.sort} onChange={(event) => setQuery((current) => ({ ...current, page: 1, sort: event.target.value as SourceSort }))} className="min-h-9 appearance-none rounded-lg border border-border bg-surface/65 pl-9 pr-9 text-xs outline-none focus-visible:outline-2 focus-visible:outline-primary"><option value="newest">Más recientes</option><option value="oldest">Más antiguas</option><option value="name_asc">Nombre: A a Z</option><option value="name_desc">Nombre: Z a A</option></select><ChatIcon name="chevron-down" className="pointer-events-none absolute right-3 top-2.5 size-4 text-foreground-secondary" /></div></div>

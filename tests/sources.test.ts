@@ -72,7 +72,7 @@ test("errores HTTP legibles, validación de FastAPI y cancelación de solicitude
     await assert.rejects(apiRequest("/sources"), (error: unknown) => {
       assert.ok(error instanceof ApiError);
       assert.equal(error.status, status);
-      assert.match(errorMessage(error), /Detalle del backend/);
+      assert.match(errorMessage(error), status === 503 ? /Las fuentes no se encuentran disponibles/ : /Detalle del backend/);
       assert.equal(isTransientError(error), status === 503);
       return true;
     });
@@ -88,7 +88,7 @@ test("errores HTTP legibles, validación de FastAPI y cancelación de solicitude
   const pending = getSource("123", controller.signal);
   controller.abort();
   await assert.rejects(pending, { name: "AbortError" });
-  assert.match(errorMessage(new TypeError("Failed to fetch")), /conectar con el backend/);
+  assert.match(errorMessage(new TypeError("Failed to fetch")), /conectarnos con el servicio de fuentes/);
 });
 
 test("solo admite CSV y XLSX con contenido y dentro del límite configurado", () => {

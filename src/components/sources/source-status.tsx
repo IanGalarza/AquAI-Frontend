@@ -50,7 +50,7 @@ export function SourceToggle({ active, busy, name, onToggle, compact = false }: 
 
 export function SourceError({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div role="alert" className="rounded-xl border border-error/25 bg-error/5 px-4 py-3 text-sm leading-relaxed">
+    <div role="alert" className="rounded-xl bg-error/5 px-4 py-3 text-sm leading-relaxed">
       <p className="break-words">{message}</p>
       {onRetry && <button type="button" onClick={onRetry} className="mt-2 min-h-9 rounded-lg px-2 text-sm font-medium text-error underline underline-offset-4">Volver a intentar</button>}
     </div>
