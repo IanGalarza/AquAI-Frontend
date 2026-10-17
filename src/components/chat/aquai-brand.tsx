@@ -1,4 +1,5 @@
 import Image from "next/image";
+import aquaiLogo from "../../../public/images/aquai-logo.png";
 
 type AquaiMarkProps = {
   large?: boolean;
@@ -11,7 +12,7 @@ export function AquaiMark({ large = false }: AquaiMarkProps) {
       aria-hidden="true"
     >
       <Image
-        src="/images/aquai-logo.png"
+        src={aquaiLogo}
         alt=""
         width={128}
         height={128}
