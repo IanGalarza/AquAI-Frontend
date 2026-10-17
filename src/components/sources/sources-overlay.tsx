@@ -25,6 +25,7 @@ export function SourcesOverlay() {
       aria-label="Administrar fuentes"
       closedby="closerequest"
       onCancel={(event) => {
+        if (event.target !== event.currentTarget) return;
         event.preventDefault();
         router.back();
       }}
