@@ -152,7 +152,7 @@ export function SourceManager({ onBack }: SourceManagerProps) {
                 <label htmlFor="source-search" className="sr-only">Buscar fuentes</label>
                 <input id="source-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} maxLength={255} placeholder="Buscar fuentes…" autoComplete="off" className="h-10 w-full min-w-0 bg-transparent text-xs outline-none placeholder:text-foreground-secondary" />
               </div>
-              <button type="button" disabled={catalog.loading} onClick={catalog.refresh} className={`${secondaryButton} shrink-0`} aria-label="Actualizar listado"><ChatIcon name="refresh" className={`size-4 ${catalog.loading ? "animate-spin motion-reduce:animate-none" : ""}`} />Actualizar</button>
+              <button type="button" aria-disabled={catalog.loading} aria-busy={catalog.loading} onClick={() => { if (!catalog.loading) catalog.refresh(); }} className={`${secondaryButton} shrink-0 aria-disabled:pointer-events-none aria-disabled:opacity-45`} aria-label="Actualizar listado"><ChatIcon name="refresh" className={`size-4 ${catalog.loading ? "animate-spin motion-reduce:animate-none" : ""}`} />Actualizar</button>
             </div>
           </div>
           {!selectedId && actionError && <SourceError message={actionError} />}
