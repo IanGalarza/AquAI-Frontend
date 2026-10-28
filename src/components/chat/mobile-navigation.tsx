@@ -4,7 +4,7 @@ import { motion, useAnimationControls, type Variants } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChatIcon } from "./chat-icon";
-import { ChatSidebar } from "./chat-sidebar";
+import { ChatSidebar, type ChatSidebarProps } from "./chat-sidebar";
 
 const DESKTOP_QUERY = "(min-width: 768px)";
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
@@ -21,9 +21,10 @@ const backdropVariants: Variants = {
 
 type MobileNavigationProps = {
   onNewConversation?: () => void;
+  conversationSidebar?: ChatSidebarProps;
 };
 
-export function MobileNavigation({ onNewConversation }: MobileNavigationProps) {
+export function MobileNavigation({ onNewConversation, conversationSidebar }: MobileNavigationProps) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -177,7 +178,11 @@ export function MobileNavigation({ onNewConversation }: MobileNavigationProps) {
           >
             <ChatIcon name="close" className="size-[18px]" />
           </button>
-          <ChatSidebar onNewConversation={() => {
+          <ChatSidebar {...conversationSidebar} onSelect={(id) => {
+            if (conversationSidebar?.onSelect) conversationSidebar.onSelect(id);
+            else router.push(`/?conversation=${encodeURIComponent(id)}`);
+            closeNavigation();
+          }} onNewConversation={() => {
             if (onNewConversation) onNewConversation();
             else router.push("/");
             closeNavigation();

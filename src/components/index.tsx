@@ -1,1 +1,1 @@
-export { ChatMockup } from "./chat/chat-mockup";
+export { Chat } from "./chat/chat";

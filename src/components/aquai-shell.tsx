@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ChatIcon } from "./chat/chat-icon";
-import { ChatSidebar } from "./chat/chat-sidebar";
+import { ChatSidebar, type ChatSidebarProps } from "./chat/chat-sidebar";
 import { MobileNavigation } from "./chat/mobile-navigation";
 import { ThemeToggle } from "./chat/theme-toggle";
 import { WaterBackground } from "./chat/water-background";
@@ -15,9 +15,10 @@ type AquaiShellProps = {
   onBack?: () => void;
   subdued?: boolean;
   sources?: boolean;
+  conversationSidebar?: ChatSidebarProps;
 };
 
-export function AquaiShell({ title, children, onNewConversation, onBack, subdued = false, sources = false }: AquaiShellProps) {
+export function AquaiShell({ title, children, onNewConversation, onBack, subdued = false, sources = false, conversationSidebar }: AquaiShellProps) {
   const backClassName = "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-sm px-2 text-sm text-foreground-secondary transition hover:bg-surface-elevated/60 hover:text-foreground";
 
   return (
@@ -26,7 +27,7 @@ export function AquaiShell({ title, children, onNewConversation, onBack, subdued
         {sources ? "Ir a las fuentes" : "Ir a la consulta"}
       </a>
       {!sources && <aside aria-label="Barra lateral de AquAI" className="hidden min-h-0 border-r border-border/80 bg-sidebar md:block">
-        <ChatSidebar onNewConversation={onNewConversation} />
+        <ChatSidebar {...conversationSidebar} onNewConversation={onNewConversation} />
       </aside>}
       <main className="relative isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <WaterBackground subdued={subdued} />
@@ -41,7 +42,7 @@ export function AquaiShell({ title, children, onNewConversation, onBack, subdued
                 <span className="hidden sm:inline">Volver al chat</span>
               </Link>}
               <span aria-hidden="true" className="mx-1 h-5 border-l border-border" />
-            </> : <MobileNavigation onNewConversation={onNewConversation} />}
+            </> : <MobileNavigation onNewConversation={onNewConversation} conversationSidebar={conversationSidebar} />}
             <h2 className="truncate text-sm font-medium tracking-[-0.02em] sm:text-base">{title}</h2>
           </div>
           <ThemeToggle />

@@ -1,4 +1,4 @@
-const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000").replace(/\/+$/, "");
+const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL?.trim().replace(/\/+$/, "");
 
 const httpMessages: Record<number, string> = {
   400: "El archivo o la solicitud no son válidos.",
@@ -10,7 +10,7 @@ const httpMessages: Record<number, string> = {
 };
 
 export class ApiError extends Error {
-  constructor(public readonly status: number, message: string) {
+  constructor(public readonly status: number, message: string, public readonly body: unknown = null) {
     super(message);
     this.name = "ApiError";
   }
@@ -28,8 +28,15 @@ export function errorMessage(error: unknown): string {
   return "No pudimos conectarnos con el servicio de fuentes. Intentá nuevamente en unos instantes.";
 }
 
-export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const timeout = AbortSignal.timeout(options.method === "POST" ? 60_000 : 30_000);
+type RequestPolicy = {
+  timeoutMs?: number;
+  httpMessages?: Record<number, string>;
+  appendDetail?: boolean;
+};
+
+export async function apiRequest<T>(path: string, options: RequestInit = {}, policy: RequestPolicy = {}): Promise<T> {
+  if (!backendUrl) throw new ApiError(0, "Falta configurar NEXT_PUBLIC_BACKEND_URL en el frontend.");
+  const timeout = AbortSignal.timeout(policy.timeoutMs ?? (options.method === "POST" ? 60_000 : 30_000));
   const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
   const response = await fetch(`${backendUrl}${path}`, { ...options, signal, cache: "no-store" });
   const body: unknown = await response.json().catch(() => null);
@@ -38,8 +45,8 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     const explanation = typeof detail === "string" ? detail : Array.isArray(detail)
       ? detail.map((item: { msg?: string }) => item.msg).filter(Boolean).join(" ")
       : null;
-    const fallback = httpMessages[response.status] || "No se pudo completar la solicitud.";
-    throw new ApiError(response.status, response.status === 503 || !explanation ? fallback : `${fallback} ${explanation}`);
+    const fallback = policy.httpMessages?.[response.status] ?? httpMessages[response.status] ?? "No se pudo completar la solicitud.";
+    throw new ApiError(response.status, response.status === 503 || !explanation || policy.appendDetail === false ? fallback : `${fallback} ${explanation}`, body);
   }
   if (body === null) throw new ApiError(502, "No pudimos leer la respuesta del servicio. Intentá nuevamente.");
   return body as T;

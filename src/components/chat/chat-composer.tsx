@@ -6,10 +6,12 @@ type ChatComposerProps = {
   onChange: (value: string) => void;
   onSend: (message: string) => void;
   inputRef: RefObject<HTMLTextAreaElement | null>;
+  disabled?: boolean;
+  processing?: boolean;
 };
 
-export function ChatComposer({ value, onChange, onSend, inputRef }: ChatComposerProps) {
-  const canSend = value.trim().length > 0;
+export function ChatComposer({ value, onChange, onSend, inputRef, disabled = false, processing = false }: ChatComposerProps) {
+  const canSend = !disabled && value.trim().length > 0 && value.trim().length <= 6000;
 
   useLayoutEffect(() => {
     const input = inputRef.current;
@@ -43,6 +45,8 @@ export function ChatComposer({ value, onChange, onSend, inputRef }: ChatComposer
           onChange={(event) => onChange(event.currentTarget.value)}
           onKeyDown={handleKeyDown}
           rows={1}
+          maxLength={6000}
+          aria-describedby="chat-context-note"
           enterKeyHint="send"
           placeholder="Escribí tu consulta sobre calidad del agua..."
           className="max-h-36 min-h-11 min-w-0 flex-1 resize-none bg-transparent py-3 text-sm leading-5 text-foreground outline-none placeholder:text-foreground-secondary sm:text-[15px]"
@@ -57,6 +61,9 @@ export function ChatComposer({ value, onChange, onSend, inputRef }: ChatComposer
           <ChatIcon name="send" className="size-[21px]" />
         </button>
       </form>
+      <p id="chat-context-note" className="mt-2 px-1 text-center text-[10px] leading-relaxed text-foreground-secondary sm:text-[11px]">
+        {processing ? "Podés navegar por otras conversaciones mientras se procesa la consulta. " : ""}Incluí la variable, el período y la fuente en cada pregunta; las referencias a turnos anteriores todavía no se resuelven.
+      </p>
     </div>
   );
 }

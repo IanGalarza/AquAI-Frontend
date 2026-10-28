@@ -1,5 +1,5 @@
-import { ChatMockup } from "@/components";
+import { Chat } from "@/components";
 
 export default function Home() {
-  return <ChatMockup />;
+  return <Chat />;
 }
