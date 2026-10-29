@@ -9,9 +9,10 @@ const PlotlyChart = dynamic(() => import("./plotly-chart").then((module) => modu
   ssr: false,
   loading: () => <p role="status" className="p-4 text-sm text-foreground-secondary">Cargando gráfico interactivo…</p>,
 });
-const statusLabels: Record<AnswerStatus, string> = {
+const statusLabels: Record<AnswerStatus | "answered", string> = {
   validated: "Resultados validados", partial: "Resultado parcial", needs_clarification: "Necesita aclaración",
   insufficient_coverage: "Sin cobertura suficiente", failed: "Análisis no completado",
+  answered: "Respuesta completada",
 };
 
 function Notes({ title, items }: { title: string; items: string[] }) {
@@ -104,10 +105,15 @@ function Chart({ chart, snapshot }: { chart: Visualization; snapshot: AssistantS
 export function ChatResponse({ message, snapshot }: { message: Message; snapshot: AssistantSnapshot }) {
   const response = snapshot.response;
   const partial = response.status === "partial";
+  const responseType = response.response_type ?? "analytical";
+  const label = response.status === "failed" ? "Respuesta no completada" :
+    responseType === "general" ? "Conocimiento general" :
+    responseType === "historical" ? "Respuesta del historial" :
+    statusLabels[response.status];
   return <div className="min-w-0 space-y-4" data-analytic-status={response.status} data-generation-status={message.status.name}>
     <div className={`inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-[11px] ${response.status === "failed" ? "border-error/30 text-error" : partial ? "border-warning/30 text-warning" : "border-border text-foreground-secondary"}`}>
       <ChatIcon name={response.status === "validated" ? "check-circle" : partial || response.status === "failed" ? "alert-triangle" : "message"} className="size-3.5" />
-      {statusLabels[response.status]}
+      {label}
     </div>
     {partial && <p className="text-xs text-warning">Sólo se muestran las partes verificadas. La consulta no se resolvió por completo.</p>}
     <p className="whitespace-pre-wrap text-sm leading-relaxed [overflow-wrap:anywhere] sm:text-[15px]">{message.content}</p>
@@ -129,6 +135,18 @@ export function ChatResponse({ message, snapshot }: { message: Message; snapshot
     </div>}
     <details className="text-[11px] text-foreground-secondary">
       <summary className="cursor-pointer">Información de ejecución</summary>
+      {response.routing && <>
+        <p className="mt-2">Ruta: {response.routing.route}.</p>
+        <p className="mt-1">Contexto utilizado: {response.routing.context_used ? "sí" : "no"}.
+          Pregunta contextualizada: {response.routing.question_contextualized ? "sí" : "no"}.</p>
+        <p className="mt-1">Router: {response.routing.model},
+          {" "}{(response.routing.duration_ms / 1000).toFixed(2)} s.
+          Tokens: {response.routing.input_tokens ?? "no informado"} de entrada;
+          {" "}{response.routing.output_tokens ?? "no informado"} de salida.</p>
+      </>}
+      {!!response.historical_message_ids?.length && <p className="mt-1 break-all">
+        Mensajes históricos: {response.historical_message_ids.join(", ")}
+      </p>}
       <p className="mt-2">Mensaje: {message.status.name}. Generación: {response.generation.status === "deterministic" ? "determinística" : response.generation.status === "generated" ? "con modelo" : "fallida"}.</p>
       {response.generation.model && <p className="mt-1">Modelo de respuesta: {response.generation.model}</p>}
       {response.planner_model && <p className="mt-1">Modelo de planificación: {response.planner_model}</p>}

@@ -15,7 +15,11 @@ export function assistantSnapshot(message: Message): AssistantSnapshot | null {
   const data = message.content_data;
   if (data.schema_version !== 1 || data.kind !== "assistant_response" || !data.response || typeof data.response !== "object" || Array.isArray(data.response)) return null;
   const response = data.response;
-  if (typeof response.answer !== "string" || !["validated", "partial", "needs_clarification", "insufficient_coverage", "failed"].includes(String(response.status))) return null;
+  const statuses = [
+    "validated", "partial", "needs_clarification",
+    "insufficient_coverage", "failed", "answered",
+  ];
+  if (typeof response.answer !== "string" || !statuses.includes(String(response.status))) return null;
   if (!["sources", "operation_references", "results", "warnings", "limitations", "visualizations", "errors", "validation_issues", "missing_information", "pending_operations"].every((key) => Array.isArray(response[key]))) return null;
   if (!response.generation || typeof response.generation !== "object" || Array.isArray(response.generation)) return null;
   if (!Array.isArray(data.storage_warnings) || !Array.isArray(data.omitted_visualizations)) return null;

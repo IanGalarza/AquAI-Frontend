@@ -120,8 +120,9 @@ export type Visualization = {
 };
 export type ExecutionError = { code: string; message: string };
 export type StoredResponse = {
-  status: AnswerStatus;
-  validation_status: AnswerStatus;
+  response_type?: "analytical" | "general" | "clarification" | "historical";
+  status: AnswerStatus | "answered";
+  validation_status: AnswerStatus | null;
   answer: string;
   language: Language;
   sources: SourceReference[];
@@ -148,6 +149,17 @@ export type StoredResponse = {
   planner_model: string | null;
   planner_input_tokens: number | null;
   planner_output_tokens: number | null;
+  historical_message_ids?: string[];
+  routing?: {
+    route: "general" | "data" | "historical" | "needs_clarification" | "failed";
+    context_used: boolean;
+    question_contextualized: boolean;
+    history_message_ids: string[];
+    model: string;
+    input_tokens: number | null;
+    output_tokens: number | null;
+    duration_ms: number;
+  } | null;
 };
 export type AssistantSnapshot = {
   schema_version: 1;
@@ -157,5 +169,5 @@ export type AssistantSnapshot = {
   context_policy: JsonObject;
   storage_warnings: string[];
   omitted_visualizations: JsonObject[];
-  validated_at: string;
+  validated_at: string | null;
 };

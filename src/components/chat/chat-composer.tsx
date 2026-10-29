@@ -62,7 +62,8 @@ export function ChatComposer({ value, onChange, onSend, inputRef, disabled = fal
         </button>
       </form>
       <p id="chat-context-note" className="mt-2 px-1 text-center text-[10px] leading-relaxed text-foreground-secondary sm:text-[11px]">
-        {processing ? "Podés navegar por otras conversaciones mientras se procesa la consulta. " : ""}Incluí la variable, el período y la fuente en cada pregunta; las referencias a turnos anteriores todavía no se resuelven.
+        {processing ? "Podés navegar por otras conversaciones mientras se procesa la consulta. " : ""}
+        Podés hacer preguntas de seguimiento. Si la referencia es ambigua, AquAI te pedirá precisarla.
       </p>
     </div>
   );
