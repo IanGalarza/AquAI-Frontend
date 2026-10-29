@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import type { AnswerStatus, AssistantSnapshot, Message, SourceReference, StoredTable, Visualization } from "@/types/conversations";
 import { displayValue } from "@/utils/conversations";
+import { displayUnit } from "@/utils/scientific";
 import { ChatIcon } from "./chat-icon";
 
 const PlotlyChart = dynamic(() => import("./plotly-chart").then((module) => module.PlotlyChart), {
@@ -42,11 +43,11 @@ function ResultTable({ table, snapshot }: { table: StoredTable; snapshot: Assist
           <thead className="sticky top-0 bg-surface-elevated">
             <tr>{table.columns.map((column) => <th key={column.name} scope="col" className="min-w-28 border-b border-border px-3.5 py-2.5 align-top font-medium">
               <span className="block [overflow-wrap:anywhere]">{column.name}</span>
-              <span className="mt-1 block text-[10px] font-normal text-foreground-secondary">{column.sql_type} · {column.unit_status === "dimensionless" ? "Adimensional" : column.unit_status === "documented" && column.unit ? column.unit : "Unidad no documentada"}</span>
+              <span className="mt-1 block text-[10px] font-normal text-foreground-secondary">{column.sql_type}{displayUnit(column) && ` · ${displayUnit(column)}`}</span>
             </th>)}</tr>
           </thead>
           <tbody>{table.rows.map((row, index) => <tr key={index} className="border-b border-border/40 last:border-0 hover:bg-background/50">
-            {table.columns.map((column) => <td key={column.name} className={`max-w-80 whitespace-pre-wrap px-3.5 py-2.5 align-top [overflow-wrap:anywhere] ${row[column.name] == null ? "italic text-foreground-secondary" : ""}`}>{displayValue(row[column.name])}</td>)}
+            {table.columns.map((column) => <td key={column.name} title={row[column.name] != null && ["NUMERIC", "BIGINT"].includes(column.sql_type) ? `Valor exacto: ${String(row[column.name])}` : undefined} className={`max-w-80 whitespace-pre-wrap px-3.5 py-2.5 align-top [overflow-wrap:anywhere] ${row[column.name] == null ? "italic text-foreground-secondary" : ""}`}>{displayValue(row[column.name], column, snapshot.response.language)}</td>)}
           </tr>)}</tbody>
         </table>
         {!table.rows.length && <p className="px-3.5 py-3 text-xs text-foreground-secondary">El resultado no contiene filas.</p>}

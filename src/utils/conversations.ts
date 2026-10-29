@@ -1,5 +1,6 @@
-import type { AssistantSnapshot, ChatMessage, Conversation, JsonValue, Message } from "@/types/conversations";
+import type { AssistantSnapshot, ChatMessage, Conversation, JsonValue, Language, Message, OutputField } from "@/types/conversations";
 import { ApiError } from "@/services/api";
+import { formatScientificNumber } from "@/utils/scientific";
 
 export function isMessage(value: unknown): value is Message {
   if (!value || typeof value !== "object") return false;
@@ -74,8 +75,11 @@ export function conversationError(error: unknown): string {
   return "No pudimos comunicarnos con el servicio de conversaciones. Comprobá el estado antes de volver a enviar.";
 }
 
-export function displayValue(value: JsonValue | undefined): string {
+export function displayValue(value: JsonValue | undefined, field?: OutputField, language: Language = "es"): string {
   if (value === null || value === undefined) return "Sin dato";
   if (typeof value === "boolean") return value ? "Sí" : "No";
+  if (field && ["NUMERIC", "BIGINT"].includes(field.sql_type) && (typeof value === "string" || typeof value === "number")) {
+    return formatScientificNumber(value, language);
+  }
   return typeof value === "object" ? JSON.stringify(value) : String(value);
 }
