@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, type ReactNode } from "react";
+import { placeFloating, revealFloating } from "@/utils/floating";
 
 const OPEN_DELAY_MS = 1000;
 const CLOSE_DELAY_MS = 120;
@@ -34,16 +35,8 @@ export function useTooltip<T extends HTMLElement>(content: ReactNode) {
     if (!enabled || !trigger || !tooltip?.isConnected || tooltip.matches(":popover-open")) return;
 
     tooltip.showPopover();
-    const anchor = trigger.getBoundingClientRect();
-    const bounds = tooltip.getBoundingClientRect();
-    const padding = 12;
-    const gap = 10;
-    const above = anchor.top - bounds.height - gap;
-    tooltip.style.left = `${Math.max(padding, Math.min(anchor.left + (anchor.width - bounds.width) / 2, window.innerWidth - bounds.width - padding))}px`;
-    tooltip.style.top = `${Math.max(padding, above >= padding ? above : Math.min(anchor.bottom + gap, window.innerHeight - bounds.height - padding))}px`;
-    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      tooltip.animate([{ opacity: 0, transform: "translateY(4px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 140, easing: "ease-out" });
-    }
+    placeFloating(trigger, tooltip);
+    revealFloating(tooltip);
   }, [clearTimers, enabled]);
 
   function scheduleOpen(delay = OPEN_DELAY_MS) {

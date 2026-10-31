@@ -1,5 +1,9 @@
-import type { Language, OutputField } from "@/types/conversations";
+import type { Language } from "@/types/conversations";
 
+// Como en el texto del backend, los enteros de cuatro cifras (p. ej., años) no se agrupan.
+function groupThousands(integer: string, separator: string): string {
+  return integer.length < 5 ? integer : integer.replace(/\B(?=(\d{3})+$)/g, separator);
+}
 
 export function formatScientificNumber(value: string | number, language: Language = "es"): string {
   const raw = String(value);
@@ -21,27 +25,15 @@ export function formatScientificNumber(value: string | number, language: Languag
   } else {
     rounded = digits + "0".repeat(-cut);
   }
+  const [decimal, thousands] = language === "es" ? [",", "."] : [".", ","];
   let text: string;
   if (magnitude < -6) {
     const mantissa = (rounded[0] + "." + rounded.slice(1)).replace(/\.?0+$/, "");
-    text = `${mantissa}e${rounded.length - places - 1}`;
+    text = `${mantissa.replace(".", decimal)}e${rounded.length - places - 1}`;
   } else {
     const padded = rounded.padStart(places + 1, "0");
-    text = (padded.slice(0, -places) + "." + padded.slice(-places)).replace(/\.?0+$/, "");
+    const fraction = padded.slice(-places).replace(/0+$/, "");
+    text = groupThousands(padded.slice(0, -places), thousands) + (fraction ? decimal + fraction : "");
   }
-  return (match[1] === "-" ? "-" : "") + (language === "es" ? text.replace(".", ",") : text);
-}
-
-export function presentationUnitStatus(field: OutputField): OutputField["unit_status"] {
-  const phNames = new Set(["ph", "phuph", "phudeph", "phunidadesdeph"]);
-  const ph = field.sources.length > 0 && field.sources.every((source) =>
-    phNames.has(source.column.replace(/[\s_\[\]().-]+/g, "").toLowerCase()));
-  return ph ? "dimensionless" : field.unit_status;
-}
-
-export function displayUnit(field: OutputField): string | null {
-  const status = presentationUnitStatus(field);
-  if (status === "dimensionless") return null;
-  if (status === "documented" && field.unit) return field.unit;
-  return ["NUMERIC", "BIGINT"].includes(field.sql_type) ? "Unidad no documentada" : null;
+  return (match[1] === "-" ? "-" : "") + text;
 }

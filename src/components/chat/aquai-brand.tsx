@@ -23,6 +23,14 @@ export function AquaiMark({ large = false }: AquaiMarkProps) {
   );
 }
 
+export function AquaiAvatar() {
+  return (
+    <span className="aquai-avatar" aria-hidden="true">
+      <Image src={aquaiLogo} alt="" width={64} height={64} sizes="40px" />
+    </span>
+  );
+}
+
 export function AquaiBrand() {
   return (
     <div className="flex items-center gap-3.5" aria-label="AquAI">

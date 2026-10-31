@@ -1,4 +1,4 @@
-import type { AssistantSnapshot, ChatMessage, Conversation, JsonValue, Language, Message, OutputField } from "@/types/conversations";
+import type { AssistantSnapshot, ChatMessage, Conversation, JsonValue, Language, Message, OutputField, TimeGrain } from "@/types/conversations";
 import { ApiError } from "@/services/api";
 import { formatScientificNumber } from "@/utils/scientific";
 
@@ -43,8 +43,10 @@ export function mergeMessages(current: ChatMessage[], incoming: Message[], pendi
   for (const item of incoming) {
     const previous = messages.get(item.id);
     if (previous && !("optimistic" in previous)) {
-      const newer = Date.parse(previous.updated_at ?? previous.created_at) > Date.parse(item.updated_at ?? item.created_at);
-      if (newer || (!generationActive(previous) && generationActive(item))) continue;
+      const difference = Date.parse(previous.updated_at ?? previous.created_at) - Date.parse(item.updated_at ?? item.created_at);
+      // Una relectura sin cambios conserva el objeto: evita volver a dibujar sus gráficos.
+      const unchanged = difference === 0 && previous.status.name === item.status.name;
+      if (difference > 0 || unchanged || (!generationActive(previous) && generationActive(item))) continue;
     }
     messages.set(item.id, item);
   }
@@ -75,11 +77,34 @@ export function conversationError(error: unknown): string {
   return "No pudimos comunicarnos con el servicio de conversaciones. Comprobá el estado antes de volver a enviar.";
 }
 
-export function displayValue(value: JsonValue | undefined, field?: OutputField, language: Language = "es"): string {
+const isoDate = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/;
+
+// Una fecha que agrupa un mes o un año se muestra con esa precisión, sin sugerir un día concreto.
+export function displayValue(value: JsonValue | undefined, field?: OutputField, language: Language = "es", grain: TimeGrain | null = null): string {
   if (value === null || value === undefined) return "Sin dato";
   if (typeof value === "boolean") return value ? "Sí" : "No";
   if (field && ["NUMERIC", "BIGINT"].includes(field.sql_type) && (typeof value === "string" || typeof value === "number")) {
     return formatScientificNumber(value, language);
   }
+  const date = field && ["DATE", "TIMESTAMP"].includes(field.sql_type) && typeof value === "string" ? isoDate.exec(value) : null;
+  if (date && grain && grain !== "day") {
+    const [, year, month] = date;
+    return grain === "year" ? year : language === "es" ? `${month}/${year}` : `${year}-${month}`;
+  }
+  if (date && language === "es") {
+    const [, year, month, day, hour, minute] = date;
+    return `${day}/${month}/${year}${hour && `${hour}:${minute}` !== "00:00" ? ` ${hour}:${minute}` : ""}`;
+  }
   return typeof value === "object" ? JSON.stringify(value) : String(value);
+}
+
+// Duración real del turno informada por el servidor, redondeada a la precisión que se muestra.
+export function formatDuration(milliseconds: number): string | null {
+  if (!Number.isFinite(milliseconds) || milliseconds < 0) return null;
+  const tenths = Math.round(milliseconds / 100);
+  if (tenths < 100) return tenths < 1 ? "<0,1 s" : `${(tenths / 10).toFixed(1).replace(".", ",")} s`;
+  const seconds = Math.round(milliseconds / 1000);
+  if (seconds < 60) return `${seconds} s`;
+  const parts = [[Math.floor(seconds / 3600), "h"], [Math.floor((seconds % 3600) / 60), "min"], [seconds % 60, "s"]] as const;
+  return parts.filter(([value]) => value > 0).map(([value, unit]) => `${value} ${unit}`).join(" ");
 }

@@ -1,13 +1,56 @@
-import type { ChatMessage } from "@/types/conversations";
-import { assistantSnapshot, generationActive, generationLeaseExpired } from "@/utils/conversations";
+import type { ChatMessage, Message } from "@/types/conversations";
+import { assistantSnapshot, formatDuration, generationActive, generationLeaseExpired } from "@/utils/conversations";
+import { AquaiAvatar } from "./aquai-brand";
 import { ChatResponse } from "./chat-response";
 import { ChatIcon } from "./chat-icon";
+
+const GENERATING = "Analizando los datos… La consulta puede tardar varios minutos.";
 
 type ChatMessagesProps = {
   messages: ChatMessage[];
   processing: boolean;
   checking: boolean;
 };
+
+function GenerationStatus({ children }: { children: string }) {
+  return <p role="status" className="flex items-center gap-2.5 text-[15px] text-foreground-secondary">
+    <span className="flex gap-1" aria-hidden="true">{[0, 1, 2].map((dot) => <span key={dot} className="size-1.5 animate-pulse rounded-full bg-primary/70" style={{ animationDelay: `${dot * 180}ms` }} />)}</span>
+    {children}
+  </p>;
+}
+
+function AssistantHeader({ message }: { message?: Message }) {
+  const snapshot = message && assistantSnapshot(message);
+  const milliseconds = message?.presentation?.duration_ms;
+  const duration = milliseconds == null ? null : formatDuration(milliseconds);
+  const failed = message && (["failed", "cancelled"].includes(message.status.name) || snapshot?.response.status === "failed");
+  const partial = snapshot?.response.status === "partial";
+  return <div className="mb-2 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+    <AquaiAvatar />
+    <span className="text-sm font-semibold">AquAI</span>
+    {duration && <span className="inline-flex items-center gap-1 text-xs text-foreground-secondary" title={`Respondió en ${duration}`}>
+      <ChatIcon name="clock" className="size-3.5" /><span className="sr-only">Tiempo de respuesta: </span>{duration}
+    </span>}
+    {failed && <span className="inline-flex items-center gap-1 rounded-full border border-error/35 px-2 py-0.5 text-[11px] font-medium text-error">
+      <ChatIcon name="alert-circle" className="size-3.5" />{message.status.name === "cancelled" ? "Cancelada" : "No completada"}
+    </span>}
+    {partial && <span className="inline-flex items-center gap-1 rounded-full border border-warning/35 px-2 py-0.5 text-[11px] font-medium text-warning">
+      <ChatIcon name="alert-triangle" className="size-3.5" />Respuesta parcial
+    </span>}
+  </div>;
+}
+
+function AssistantBody({ message }: { message: Message }) {
+  if (generationActive(message)) {
+    return <GenerationStatus>{generationLeaseExpired(message) ? "La generación sigue pendiente en el servidor. Comprobá el estado antes de continuar." : GENERATING}</GenerationStatus>;
+  }
+  const snapshot = assistantSnapshot(message);
+  if (snapshot && message.presentation) return <ChatResponse snapshot={snapshot} presentation={message.presentation} />;
+  return <>
+    <p className="whitespace-pre-line text-[15px] leading-7 [overflow-wrap:anywhere]">{message.content}</p>
+    {message.content_data.kind === "assistant_response" && !snapshot && <p className="mt-3 text-xs text-foreground-secondary">Esta respuesta tiene un formato anterior; se muestra su texto original.</p>}
+  </>;
+}
 
 export function ChatMessages({ messages, processing, checking }: ChatMessagesProps) {
   const hasActive = messages.some(generationActive);
@@ -19,25 +62,31 @@ export function ChatMessages({ messages, processing, checking }: ChatMessagesPro
       aria-relevant="additions"
       className="mx-auto w-full max-w-[920px] px-4 py-6 sm:px-8 sm:py-9 lg:px-10"
     >
-      <ol className="space-y-6">
+      <ol className="space-y-8">
         {messages.map((message) => {
-          const user = message.role === "user";
-          const snapshot = !("optimistic" in message) && !user ? assistantSnapshot(message) : null;
-          const failed = !("optimistic" in message) && ["failed", "cancelled"].includes(message.status.name);
-          return <li key={message.id} data-user-message={user || undefined} data-assistant-message={!user || undefined} className={`flex min-w-0 ${user ? "justify-end" : "justify-start"}`}>
-            <div className={user ? "max-w-[90%] rounded-md border border-primary/20 bg-primary/10 px-4 py-3 text-sm leading-relaxed text-foreground sm:max-w-[78%] sm:px-5 sm:text-[15px]" : "min-w-0 w-full rounded-md border border-border/70 bg-surface/95 px-4 py-4 text-foreground sm:px-5 sm:py-5"}>
-              {!user && <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-primary"><ChatIcon name="message" className="size-4" />AquAI</div>}
-              <span className="sr-only">{user ? "Vos: " : "AquAI: "}</span>
-              {failed && <p className="mb-3 flex items-center gap-2 text-xs font-medium text-error"><ChatIcon name="alert-circle" className="size-4" />{!("optimistic" in message) && message.status.name === "cancelled" ? "Generación cancelada" : "Generación fallida"}</p>}
-              {generationActive(message) ? <p role="status" className="flex items-center gap-2 text-sm text-foreground-secondary"><span className="size-3 shrink-0 animate-pulse rounded-full bg-primary/60" />{generationLeaseExpired(message) ? "La generación sigue pendiente en el servidor. Comprobá el estado antes de continuar." : "Generando respuesta… La consulta puede tardar varios minutos."}</p> :
-                snapshot && !("optimistic" in message) ? <ChatResponse message={message} snapshot={snapshot} /> : <p className="whitespace-pre-wrap text-sm leading-relaxed [overflow-wrap:anywhere] sm:text-[15px]">{message.content}</p>}
-              {"optimistic" in message && <p className="mt-1.5 text-[10px] text-foreground-secondary">{checking ? "Sin confirmación de persistencia" : "Enviando · pendiente de confirmación"}</p>}
-              {!("optimistic" in message) && !snapshot && message.sources.length > 0 && <details className="mt-3 text-xs text-foreground-secondary"><summary className="cursor-pointer">Referencias conservadas ({message.sources.length})</summary><ul className="mt-2 space-y-1">{message.sources.map((source) => <li key={source.id}>{String(source.details.dataset_name ?? source.dataset_id ?? source.source_id)}{source.details.dataset_version ? ` · v${source.details.dataset_version}` : ""}</li>)}</ul></details>}
-              {!("optimistic" in message) && message.content_data.kind === "assistant_response" && !snapshot && <p className="mt-3 text-xs text-warning">El contenido estructurado de esta versión no se puede mostrar. Se conserva el texto original.</p>}
+          if (message.role === "user") {
+            return <li key={message.id} data-user-message className="flex min-w-0 justify-end">
+              <div className="max-w-[90%] rounded-2xl rounded-br-md border border-primary/20 bg-primary/10 px-4 py-3 text-[15px] leading-relaxed text-foreground sm:max-w-[78%] sm:px-5">
+                <span className="sr-only">Vos: </span>
+                <p className="whitespace-pre-wrap [overflow-wrap:anywhere]">{message.content}</p>
+                {"optimistic" in message && <p className="mt-1.5 text-[10px] text-foreground-secondary">{checking ? "Sin confirmación de persistencia" : "Enviando · pendiente de confirmación"}</p>}
+              </div>
+            </li>;
+          }
+          if ("optimistic" in message) return null;
+          return <li key={message.id} data-assistant-message className="min-w-0" data-generation-status={message.status.name}>
+            <AssistantHeader message={message} />
+            <div className="min-w-0 rounded-xl border border-border/60 bg-surface/95 px-4 py-4 text-foreground sm:px-5 sm:py-5">
+              <AssistantBody message={message} />
             </div>
           </li>;
         })}
-        {(processing || checking) && !hasActive && <li role="status" className="flex items-center gap-2 text-sm text-foreground-secondary"><span className="size-3 animate-pulse rounded-full bg-primary/60" />{checking ? "Comprobando el estado guardado; la pregunta no se reenviará automáticamente." : "Generando respuesta… La consulta puede tardar varios minutos."}</li>}
+        {(processing || checking) && !hasActive && <li className="min-w-0">
+          <AssistantHeader />
+          <div className="rounded-xl border border-border/60 bg-surface/95 px-4 py-4 sm:px-5">
+            <GenerationStatus>{checking ? "Comprobando el estado guardado; la pregunta no se reenviará automáticamente." : GENERATING}</GenerationStatus>
+          </div>
+        </li>}
       </ol>
     </section>
   );

@@ -18,6 +18,41 @@ export type MessageSource = {
   reference_order: number;
   details: JsonObject;
 };
+export type CitationVariable = { name: string; column: string | null; row: number | null; cells: string | null };
+export type Citation = {
+  id: string;
+  source_id: string;
+  dataset_id: string;
+  version: number;
+  file_name: string;
+  file_type: string;
+  sheet: string | null;
+  dataset: string;
+  first_row: number | null;
+  last_row: number | null;
+  variables: CitationVariable[];
+};
+export type AnswerSegment = {
+  kind: "paragraph" | "note";
+  text: string;
+  items: string[];
+  citations: string[];
+  table: string | null;
+  chart: string | null;
+};
+export type TimeGrain = "day" | "month" | "year";
+export type TableColumnView = { name: string; label: string; unit: string | null; unit_documented: boolean; numeric: boolean; time_grain: TimeGrain | null };
+export type TableView = { evidence_id: string; columns: TableColumnView[]; citations: string[] };
+export type ChartView = { operation_id: string; citations: string[]; x_title: string | null; y_title: string | null; legend_title: string | null };
+export type MessagePresentation = {
+  segments: AnswerSegment[];
+  citations: Citation[];
+  tables: TableView[];
+  charts: ChartView[];
+  trailing_tables: string[];
+  trailing_charts: string[];
+  duration_ms: number | null;
+};
 export type Message = {
   id: string;
   conversation_id: string;
@@ -29,6 +64,7 @@ export type Message = {
   created_at: string;
   updated_at: string | null;
   sources: MessageSource[];
+  presentation?: MessagePresentation | null;
 };
 export type MessagePage = { conversation_id: string; items: Message[]; total: number; page: number; page_size: number };
 export type OptimisticMessage = { id: string; role: "user"; content: string; optimistic: true };
@@ -120,7 +156,7 @@ export type Visualization = {
 };
 export type ExecutionError = { code: string; message: string };
 export type StoredResponse = {
-  response_type?: "analytical" | "general" | "clarification" | "historical";
+  response_type?: "analytical" | "general" | "catalog" | "clarification" | "historical";
   status: AnswerStatus | "answered";
   validation_status: AnswerStatus | null;
   answer: string;
@@ -151,7 +187,7 @@ export type StoredResponse = {
   planner_output_tokens: number | null;
   historical_message_ids?: string[];
   routing?: {
-    route: "general" | "data" | "historical" | "needs_clarification" | "failed";
+    route: "general" | "catalog" | "data" | "historical" | "needs_clarification" | "failed";
     context_used: boolean;
     question_contextualized: boolean;
     history_message_ids: string[];
