@@ -145,6 +145,10 @@ export function useConversations() {
 
   const key = selectedId ?? NEW;
   const thread = threads[key] ?? emptyThread();
+  // El listado ya trae el título: se usa mientras se lee la conversación elegida.
+  const conversation = thread.conversation ?? conversations.find((item) => item.id === selectedId) ?? null;
+  // Una conversación elegida que nunca se leyó todavía no tiene contenido: no es una conversación nueva.
+  const opening = !!selectedId && !thread.conversation && !thread.error;
   const activeMessage = thread.messages.find((message) => generationActive(message) && !generationLeaseExpired(message));
   const isSending = !!pending[key];
   const checking = pending[key]?.phase === "checking";
@@ -318,7 +322,7 @@ export function useConversations() {
   return {
     selectedId, select: navigate, newConversation, creating, selectionReady,
     conversations, totalConversations, loadedPages, listLoading, listError, refreshList,
-    thread, draft: drafts[key] ?? "", setDraft: (text: string) => setDrafts((current) => ({ ...current, [key]: text })),
+    thread, conversation, opening, draft: drafts[key] ?? "", setDraft: (text: string) => setDrafts((current) => ({ ...current, [key]: text })),
     send, checkState, isSending, checking, processing: !!activeMessage || (isSending && !checking) || creating,
     sendDisabled: !selectionReady || creating || isSending || !!activeMessage || !!(selectedId && (!thread.checked || thread.loading || thread.error)),
     loadOlder, olderError,

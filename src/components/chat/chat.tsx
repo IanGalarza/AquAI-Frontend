@@ -15,6 +15,7 @@ export function Chat() {
   const previousView = useRef({ conversation: "", first: "", last: "" });
   const { thread } = chat;
   const hasMessages = thread.messages.length > 0;
+  const loading = !chat.selectionReady || chat.opening;
   const lastMessage = thread.messages.at(-1);
   const lastKey = lastMessage ? `${lastMessage.id}:${"status" in lastMessage ? lastMessage.status.name : "local"}` : "";
 
@@ -32,7 +33,8 @@ export function Chat() {
     scrollHeight.current = viewport.scrollHeight;
   }, [lastKey, thread.messages, hasMessages, chat.selectedId]);
 
-  return <AquaiShell title={thread.conversation?.title ?? (chat.selectedId ? "Conversación" : "Nueva conversación")} onNewConversation={() => void chat.newConversation()} subdued={hasMessages}
+  return <AquaiShell title={chat.conversation?.title ?? (loading ? "" : chat.selectedId ? "Conversación" : "Nueva conversación")}
+    onNewConversation={() => void chat.newConversation()} subdued={hasMessages || !!(chat.opening && chat.conversation?.last_message_at)}
     conversationSidebar={{ conversations: chat.conversations, selectedId: chat.selectedId, onSelect: chat.select,
       loading: chat.listLoading, error: chat.listError, creating: chat.creating,
       hasMore: chat.loadedPages * 20 < chat.totalConversations,
@@ -47,9 +49,9 @@ export function Chat() {
         </button>
         {chat.olderError && <p role="alert" className="mt-2 text-xs text-error">{chat.olderError}</p>}
       </div>}
-      {(!chat.selectionReady || thread.loading) && <p role="status" className="px-4 py-6 text-center text-sm text-foreground-secondary">Cargando conversación…</p>}
       {hasMessages ? <ChatMessages messages={thread.messages} processing={chat.processing} checking={chat.checking} /> :
-        chat.selectionReady && !thread.loading && !thread.error && <ChatWelcome onSend={(text) => void chat.send(text)} disabled={chat.sendDisabled} />}
+        loading ? <p role="status" className="px-4 py-6 text-center text-sm text-foreground-secondary">Cargando conversación…</p> :
+        !thread.error && <ChatWelcome onSend={(text) => void chat.send(text)} disabled={chat.sendDisabled} />}
     </div>
     {(thread.error || thread.notice) && <div role={thread.error ? "alert" : "status"} className="relative z-10 mx-auto w-full max-w-[920px] px-4 pb-3 sm:px-8 lg:px-10">
       <div className={`flex flex-wrap items-center justify-between gap-2 rounded-sm border bg-surface/95 px-3.5 py-3 text-xs ${thread.error ? "border-error/35 text-error" : "border-warning/35 text-warning"}`}>
