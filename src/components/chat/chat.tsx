@@ -16,6 +16,7 @@ export function Chat() {
   const { thread } = chat;
   const hasMessages = thread.messages.length > 0;
   const loading = !chat.selectionReady || chat.opening;
+  const conversationId = chat.conversation?.id;
   const lastMessage = thread.messages.at(-1);
   const lastKey = lastMessage ? `${lastMessage.id}:${"status" in lastMessage ? lastMessage.status.name : "local"}` : "";
 
@@ -34,8 +35,10 @@ export function Chat() {
   }, [lastKey, thread.messages, hasMessages, chat.selectedId]);
 
   return <AquaiShell title={chat.conversation?.title ?? (loading ? "" : chat.selectedId ? "Conversación" : "Nueva conversación")}
-    onNewConversation={() => void chat.newConversation()} subdued={hasMessages || !!(chat.opening && chat.conversation?.last_message_at)}
+    onNewConversation={chat.newConversation} subdued={hasMessages || !!(chat.opening && chat.conversation?.last_message_at)}
+    onRename={conversationId ? (title) => chat.renameConversation(conversationId, title) : undefined}
     conversationSidebar={{ conversations: chat.conversations, selectedId: chat.selectedId, onSelect: chat.select,
+      onDelete: chat.deleteConversation,
       loading: chat.listLoading, error: chat.listError, creating: chat.creating,
       hasMore: chat.loadedPages * 20 < chat.totalConversations,
       onLoadMore: () => void chat.refreshList(true), onRefresh: () => void chat.refreshList() }}>

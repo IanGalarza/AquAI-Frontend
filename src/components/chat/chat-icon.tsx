@@ -1,6 +1,6 @@
 import type { SVGProps } from "react";
 
-type IconName = "plus" | "search" | "message" | "database" | "send" | "sun" | "moon" | "menu" | "close" | "upload" | "refresh" | "arrow-left" | "arrow-up" | "chevron-right" | "chevron-down" | "file" | "folder" | "calendar" | "clock" | "cloud-upload" | "eye" | "table" | "rows" | "columns" | "text" | "hash" | "description" | "check-circle" | "alert-triangle" | "alert-circle" | "calculator";
+type IconName = "plus" | "search" | "message" | "database" | "send" | "sun" | "moon" | "menu" | "close" | "upload" | "refresh" | "arrow-left" | "arrow-up" | "chevron-right" | "chevron-down" | "file" | "folder" | "calendar" | "clock" | "cloud-upload" | "eye" | "table" | "rows" | "columns" | "text" | "hash" | "description" | "check-circle" | "alert-triangle" | "alert-circle" | "calculator" | "pencil" | "trash";
 
 type ChatIconProps = SVGProps<SVGSVGElement> & {
   name: IconName;
@@ -38,6 +38,8 @@ const paths: Record<IconName, React.ReactNode> = {
   "alert-triangle": <><path d="m10.3 4-8 14a2 2 0 0 0 1.7 3h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0Z" /><path d="M12 9v4M12 17h.01" /></>,
   "alert-circle": <><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 17h.01" /></>,
   calculator: <><rect x="5" y="2" width="14" height="20" rx="2" /><path d="M8 6h8M8 11h1M15 11h1M8 15h1M15 15h1M8 19h1M15 19h1" /></>,
+  pencil: <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4ZM13.5 6.5l4 4" />,
+  trash: <path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />,
 };
 
 export function ChatIcon({ name, className, ...props }: ChatIconProps) {

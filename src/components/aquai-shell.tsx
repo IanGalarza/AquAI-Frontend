@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ChatIcon } from "./chat/chat-icon";
 import { ChatSidebar, type ChatSidebarProps } from "./chat/chat-sidebar";
+import { EditableTitle } from "./chat/editable-title";
 import { MobileNavigation } from "./chat/mobile-navigation";
 import { ThemeToggle } from "./chat/theme-toggle";
 import { WaterBackground } from "./chat/water-background";
@@ -12,13 +13,14 @@ type AquaiShellProps = {
   title: string;
   children: ReactNode;
   onNewConversation?: () => void;
+  onRename?: (title: string) => Promise<void>;
   onBack?: () => void;
   subdued?: boolean;
   sources?: boolean;
   conversationSidebar?: ChatSidebarProps;
 };
 
-export function AquaiShell({ title, children, onNewConversation, onBack, subdued = false, sources = false, conversationSidebar }: AquaiShellProps) {
+export function AquaiShell({ title, children, onNewConversation, onRename, onBack, subdued = false, sources = false, conversationSidebar }: AquaiShellProps) {
   const backClassName = "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-sm px-2 text-sm text-foreground-secondary transition hover:bg-surface-elevated/60 hover:text-foreground";
 
   return (
@@ -32,7 +34,7 @@ export function AquaiShell({ title, children, onNewConversation, onBack, subdued
       <main className="relative isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <WaterBackground subdued={subdued} />
         <header className={`relative z-10 flex shrink-0 items-center justify-between gap-3 border-b border-border/65 px-4 sm:px-7 lg:px-8 ${sources ? "h-14 sm:h-16" : "h-[72px] sm:h-20"}`}>
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             {sources ? <>
               {onBack ? <button type="button" onClick={onBack} aria-label="Volver al chat" className={backClassName}>
                 <ChatIcon name="arrow-left" className="size-5" />
@@ -43,7 +45,8 @@ export function AquaiShell({ title, children, onNewConversation, onBack, subdued
               </Link>}
               <span aria-hidden="true" className="mx-1 h-5 border-l border-border" />
             </> : <MobileNavigation onNewConversation={onNewConversation} conversationSidebar={conversationSidebar} />}
-            <h2 className="truncate text-sm font-medium tracking-[-0.02em] sm:text-base">{title}</h2>
+            {/* Cambiar de conversación descarta una edición en curso: nunca renombra otro chat. */}
+            <EditableTitle key={conversationSidebar?.selectedId ?? "new"} title={title} onRename={onRename} />
           </div>
           <ThemeToggle />
         </header>

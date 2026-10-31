@@ -21,6 +21,17 @@ export function createConversation(title?: string): Promise<Conversation> {
   }, policy);
 }
 
+export function renameConversation(id: string, title: string): Promise<Conversation> {
+  return apiRequest(`/conversations/${encodeURIComponent(id)}`, {
+    method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title }),
+  }, { ...policy, httpMessages: { ...messages, 422: "El título debe tener entre 1 y 200 caracteres, sin saltos de línea." } });
+}
+
+export function deleteConversation(id: string): Promise<void> {
+  return apiRequest(`/conversations/${encodeURIComponent(id)}`, { method: "DELETE" },
+    { ...policy, httpMessages: { ...messages, 409: "No se puede eliminar mientras se genera una respuesta. Esperá a que finalice." } });
+}
+
 export function listConversations(page = 1, signal?: AbortSignal): Promise<ConversationPage> {
   return apiRequest(`/conversations?${new URLSearchParams({ page: String(page), page_size: "20" })}`, { signal }, policy);
 }

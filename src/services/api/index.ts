@@ -48,6 +48,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}, pol
     const fallback = policy.httpMessages?.[response.status] ?? httpMessages[response.status] ?? "No se pudo completar la solicitud.";
     throw new ApiError(response.status, response.status === 503 || !explanation || policy.appendDetail === false ? fallback : `${fallback} ${explanation}`, body);
   }
+  if (response.status === 204) return undefined as T;
   if (body === null) throw new ApiError(502, "No pudimos leer la respuesta del servicio. Intentá nuevamente.");
   return body as T;
 }

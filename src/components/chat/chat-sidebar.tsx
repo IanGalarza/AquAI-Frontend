@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AquaiBrand } from "./aquai-brand";
 import { ChatIcon } from "./chat-icon";
+import { ConversationListRow } from "./conversation-list-row";
 import type { Conversation } from "@/types/conversations";
 
 export type ChatSidebarProps = {
@@ -11,6 +12,7 @@ export type ChatSidebarProps = {
   conversations?: Conversation[];
   selectedId?: string | null;
   onSelect?: (id: string) => void;
+  onDelete?: (id: string) => Promise<void>;
   loading?: boolean;
   creating?: boolean;
   error?: string | null;
@@ -19,8 +21,8 @@ export type ChatSidebarProps = {
   onRefresh?: () => void;
 };
 
-export function ChatSidebar({ onNewConversation, onSourcesNavigate, conversations = [], selectedId, onSelect, loading = false,
-  creating = false, error, hasMore = false, onLoadMore, onRefresh }: ChatSidebarProps) {
+export function ChatSidebar({ onNewConversation, onSourcesNavigate, conversations = [], selectedId, onSelect, onDelete,
+  loading = false, creating = false, error, hasMore = false, onLoadMore, onRefresh }: ChatSidebarProps) {
   const searchId = useId();
   const pathname = usePathname();
   const router = useRouter();
@@ -67,18 +69,13 @@ export function ChatSidebar({ onNewConversation, onSourcesNavigate, conversation
         {!!conversations.length && !matching.length && <p className="px-2 py-3 text-xs text-foreground-secondary">Sin coincidencias en las conversaciones cargadas.</p>}
         <ul className="space-y-1">
           {matching.map((conversation) => (
-            <li key={conversation.id}>
-              <button
-                type="button"
-                onClick={() => onSelect ? onSelect(conversation.id) : router.push(`/?conversation=${encodeURIComponent(conversation.id)}`)}
-                aria-current={selectedId === conversation.id ? "page" : undefined}
-                title={conversation.title}
-                className={`flex min-h-12 w-full items-center gap-3 rounded-sm px-2.5 py-3 text-left text-[13px] text-foreground/90 transition hover:bg-surface-elevated/60 ${selectedId === conversation.id ? "bg-primary/10 ring-1 ring-inset ring-primary/20" : ""}`}
-              >
-                <ChatIcon name="message" className="size-[18px] shrink-0 text-foreground-secondary" />
-                <span className="min-w-0 truncate">{conversation.title}</span>
-              </button>
-            </li>
+            <ConversationListRow
+              key={conversation.id}
+              conversation={conversation}
+              selected={selectedId === conversation.id}
+              onSelect={() => onSelect ? onSelect(conversation.id) : router.push(`/?conversation=${encodeURIComponent(conversation.id)}`)}
+              onDelete={onDelete && (() => onDelete(conversation.id))}
+            />
           ))}
         </ul>
         {loading && <p role="status" className="px-2 py-3 text-xs text-foreground-secondary">Cargando conversaciones…</p>}

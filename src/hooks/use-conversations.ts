@@ -59,7 +59,8 @@ export function useConversations() {
     url.pathname = "/";
     if (id) url.searchParams.set("conversation", id);
     else url.searchParams.delete("conversation");
-    window.history.pushState(null, "", `${url.pathname}${url.search}`);
+    // Repetir la selección actual no agrega entradas al historial del navegador.
+    if (url.href !== window.location.href) window.history.pushState(null, "", `${url.pathname}${url.search}`);
   }, []);
 
   const refreshList = useCallback(async (loadMore = false) => {
@@ -207,22 +208,32 @@ export function useConversations() {
     return () => { stopped = true; clearTimeout(timer); controller.abort(); };
   }, [selectedId, shouldPoll, thread.total, refreshList, refreshThread, finishCheck, updateThread]);
 
-  async function newConversation() {
-    if (creatingRef.current) return;
-    creatingRef.current = true;
-    setCreating(true);
+  // Una conversación nueva es sólo un borrador: se guarda recién con el primer mensaje (send).
+  const newConversation = () => {
+    updateThread(NEW, (current) => ({ ...current, notice: null }));
+    navigate(null);
+  };
+
+  async function renameConversation(id: string, title: string) {
+    const conversation = await api.renameConversation(id, title);
+    setConversations((current) => mergeConversations(current, [conversation]));
+    // Sólo se actualiza un hilo ya leído: crear uno vacío lo haría pasar por una conversación nueva.
+    setThreads((current) => current[id] ? { ...current, [id]: { ...current[id], conversation } } : current);
+    // Releer el listado descarta una lectura anterior al cambio que traería el título viejo.
+    void refreshList();
+  }
+
+  async function deleteConversation(id: string) {
     try {
-      const conversation = await api.createConversation();
-      updateThread(conversation.id, () => ({ ...emptyThread(), conversation, checked: true }));
-      setConversations((current) => mergeConversations(current, [conversation]));
-      navigate(conversation.id);
-      void refreshList();
+      await api.deleteConversation(id);
     } catch (error) {
-      updateThread(key, (current) => ({ ...current, notice: conversationError(error) }));
-    } finally {
-      creatingRef.current = false;
-      setCreating(false);
+      // Si otra pestaña ya la eliminó, el resultado buscado se cumplió.
+      if (!(error instanceof ApiError && error.status === 404)) throw error;
     }
+    setConversations((current) => current.filter((item) => item.id !== id));
+    setThreads((current) => Object.fromEntries(Object.entries(current).filter(([threadId]) => threadId !== id)));
+    if (id === selectedId) navigate(null);
+    void refreshList();
   }
 
   async function send(text: string) {
@@ -320,7 +331,7 @@ export function useConversations() {
   }
 
   return {
-    selectedId, select: navigate, newConversation, creating, selectionReady,
+    selectedId, select: navigate, newConversation, renameConversation, deleteConversation, creating, selectionReady,
     conversations, totalConversations, loadedPages, listLoading, listError, refreshList,
     thread, conversation, opening, draft: drafts[key] ?? "", setDraft: (text: string) => setDrafts((current) => ({ ...current, [key]: text })),
     send, checkState, isSending, checking, processing: !!activeMessage || (isSending && !checking) || creating,
