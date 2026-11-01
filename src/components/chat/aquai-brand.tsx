@@ -5,6 +5,9 @@ type AquaiMarkProps = {
   large?: boolean;
 };
 
+//
+// Muestra el logo de AquAI en tamaño normal o grande.
+//
 export function AquaiMark({ large = false }: AquaiMarkProps) {
   return (
     <span
@@ -23,6 +26,9 @@ export function AquaiMark({ large = false }: AquaiMarkProps) {
   );
 }
 
+//
+// Muestra el logo de AquAI como avatar del asistente.
+//
 export function AquaiAvatar() {
   return (
     <span className="aquai-avatar" aria-hidden="true">
@@ -31,6 +37,9 @@ export function AquaiAvatar() {
   );
 }
 
+//
+// Muestra la marca de AquAI con su logo y nombre.
+//
 export function AquaiBrand() {
   return (
     <div className="flex items-center gap-3.5" aria-label="AquAI">

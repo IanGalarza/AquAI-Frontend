@@ -6,7 +6,9 @@ import { withMinimumDuration } from "../utils/minimum-duration";
 
 type ResourceState<T> = { key: string | null; data: T | null; loading: boolean; error: string | null };
 
-// Una sola solicitud por recurso. El siguiente sondeo se agenda al terminar el anterior.
+//
+// Gestiona la carga de un recurso de fuentes con sondeo, reintentos y actualización local.
+//
 export function useSourceResource<T>(
   key: string | null,
   request: (signal: AbortSignal) => Promise<T>,

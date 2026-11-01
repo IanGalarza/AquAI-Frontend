@@ -5,6 +5,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export type Notice = { id: number; message: string; tone: "success" | "error" | "info" };
 export const NOTICE_DURATION_MS = 4500;
 
+//
+// Gestiona una notificación que se muestra y se descarta sola tras un tiempo.
+//
 export function useTransientNotice(duration = NOTICE_DURATION_MS) {
   const [notice, setNotice] = useState<Notice | null>(null);
   const nextId = useRef(0);

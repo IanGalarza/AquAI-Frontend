@@ -10,13 +10,15 @@ import {
 } from "./theme-store";
 
 type ThemeContextValue = {
-  // Es null hasta completar la hidratación.
   theme: Theme | null;
   setTheme: (theme: Theme) => void;
 };
 
 export const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+//
+// Provee el tema actual y la función para cambiarlo a toda la aplicación.
+//
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const theme = useSyncExternalStore(
     subscribeToTheme,

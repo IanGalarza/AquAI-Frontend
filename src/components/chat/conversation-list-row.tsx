@@ -11,6 +11,9 @@ type ConversationListRowProps = {
   onDelete?: () => Promise<void>;
 };
 
+//
+// Muestra una conversación del listado con su acción de eliminar con confirmación.
+//
 export function ConversationListRow({ conversation, selected, onSelect, onDelete }: ConversationListRowProps) {
   const [confirming, setConfirming] = useState(false);
   const { busy, error, setError, run } = useConversationAction();
@@ -32,7 +35,6 @@ export function ConversationListRow({ conversation, selected, onSelect, onDelete
           className={`mr-1 ${confirming ? "grid" : "hidden"} size-8 shrink-0 place-items-center rounded-sm text-foreground-secondary transition hover:text-error group-hover:grid group-focus-within:grid pointer-coarse:grid`}>
           <ChatIcon name="trash" className="size-4" />
         </button>
-        {/* Al eliminarse, la fila sale del listado y el diálogo se cierra con ella. */}
         {confirming && <ConfirmDialog title="Eliminar conversación" busy={busy} error={error}
           onConfirm={() => void run(onDelete)} onCancel={() => setConfirming(false)}>
           ¿Estás seguro de que deseas eliminar «{conversation.title}»? Se borrarán todos sus mensajes.

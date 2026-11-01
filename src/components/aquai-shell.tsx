@@ -20,6 +20,9 @@ type AquaiShellProps = {
   conversationSidebar?: ChatSidebarProps;
 };
 
+//
+// Renderiza el marco de la aplicación con barra lateral, encabezado, título y fondo animado.
+//
 export function AquaiShell({ title, children, onNewConversation, onRename, onBack, subdued = false, sources = false, conversationSidebar }: AquaiShellProps) {
   const backClassName = "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-sm px-2 text-sm text-foreground-secondary transition hover:bg-surface-elevated/60 hover:text-foreground";
 
@@ -45,7 +48,6 @@ export function AquaiShell({ title, children, onNewConversation, onRename, onBac
               </Link>}
               <span aria-hidden="true" className="mx-1 h-5 border-l border-border" />
             </> : <MobileNavigation onNewConversation={onNewConversation} conversationSidebar={conversationSidebar} />}
-            {/* Cambiar de conversación descarta una edición en curso: nunca renombra otro chat. */}
             <EditableTitle key={conversationSidebar?.selectedId ?? "new"} title={title} onRename={onRename} />
           </div>
           <ThemeToggle />

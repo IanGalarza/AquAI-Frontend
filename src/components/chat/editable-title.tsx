@@ -11,6 +11,9 @@ type EditableTitleProps = {
 
 const titleClassName = "truncate text-sm font-medium tracking-[-0.02em] sm:text-base";
 
+//
+// Muestra el título de la conversación y permite renombrarlo.
+//
 export function EditableTitle({ title, onRename }: EditableTitleProps) {
   const [editing, setEditing] = useState(false);
   const { busy, error, setError, run } = useConversationAction();
@@ -18,7 +21,6 @@ export function EditableTitle({ title, onRename }: EditableTitleProps) {
   async function save(value: string) {
     const next = value.trim();
     if (busy) return;
-    // Un título vacío o sin cambios no se envía: se conserva el actual.
     if (!onRename || !next || next === title || await run(() => onRename(next))) setEditing(false);
   }
 
@@ -35,9 +37,7 @@ export function EditableTitle({ title, onRename }: EditableTitleProps) {
         onBlur={(event) => void save(event.currentTarget.value)}
         onKeyDown={(event) => {
           if (event.key === "Enter") void save(event.currentTarget.value);
-          // Con un guardado en curso, Esc no oculta su resultado ni su error.
           if (event.key !== "Escape" || busy) return;
-          // Restaurar el valor evita que el blur al desmontar guarde lo descartado.
           event.currentTarget.value = title;
           setEditing(false);
         }}

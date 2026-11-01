@@ -16,14 +16,16 @@ const MAX_BAR_PX = 32;
 const MIN_TICK_PX = 64;
 const MANY_CATEGORIES = 12;
 const RESIZE_DEBOUNCE_MS = 120;
-// Orden categórico fijo. Supera los controles de daltonismo sobre las superficies de AquAI; los tonos
-// con contraste menor a 3:1 se compensan con el tooltip de cada marca y la tabla de resultados.
 const palettes = {
   light: ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"],
   dark: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"],
 };
 
 let renderer: Promise<PlotlyApi> | undefined;
+
+//
+// Carga una sola vez el renderizador de Plotly y permite reintentar si falla.
+//
 function loadRenderer() {
   renderer ??= import("plotly.js-basic-dist-min").then((module) => module.default).catch((error) => {
     renderer = undefined;
@@ -32,16 +34,23 @@ function loadRenderer() {
   return renderer;
 }
 
-// Plotly interpreta etiquetas HTML en los rótulos: el texto se escapa como en las figuras del backend.
+//
+// Escapa los caracteres HTML de un rótulo antes de pasarlo a Plotly.
+//
 function escapeMarkup(text: string): string {
   return text.replace(/[&<>"']/g, (character) => `&#${character.charCodeAt(0)};`);
 }
 
+//
+// Devuelve el mayor valor absoluto numérico de una lista.
+//
 function largest(values: unknown[]): number {
   return Math.max(0, ...values.filter((value): value is number => typeof value === "number").map(Math.abs));
 }
 
-// Barras finas y rótulos legibles según el ancho disponible; se recalcula al redimensionar.
+//
+// Calcula el espaciado de barras y las marcas del eje X según el ancho disponible.
+//
 function responsive(figure: PlotlyFigure, width: number): Responsive {
   const result: Responsive = {};
   const bars = figure.data.filter((trace) => trace.type === "bar" && trace.width === undefined);
@@ -53,7 +62,6 @@ function responsive(figure: PlotlyFigure, width: number): Responsive {
   const axis = figure.layout.xaxis;
   if (axis && typeof axis === "object" && !Array.isArray(axis) && Array.isArray(axis.tickvals) && Array.isArray(axis.ticktext)
       && axis.tickvals.length > MANY_CATEGORIES) {
-    // Se rotula una categoría de cada «step»; el tooltip de cada marca conserva su nombre escapado.
     const step = Math.ceil(axis.tickvals.length / Math.max(2, Math.floor(width / MIN_TICK_PX)));
     result.tickvals = axis.tickvals.filter((_, index) => index % step === 0);
     result.ticktext = axis.ticktext.filter((_, index) => index % step === 0);
@@ -61,14 +69,15 @@ function responsive(figure: PlotlyFigure, width: number): Responsive {
   return result;
 }
 
-// Sólo presentación: colores, tipografía y espaciado. Valores, escalas, unidades y trazas son del backend.
+//
+// Adapta una figura de Plotly al tema, la tipografía y los rótulos de la interfaz.
+//
 function themedFigure(figure: PlotlyFigure, element: HTMLElement, theme: "light" | "dark", title: string, labels?: Labels) {
   const tokens = getComputedStyle(document.documentElement);
   const [surface, foreground, secondary, border] = ["--surface", "--foreground", "--foreground-secondary", "--border"]
     .map((name) => tokens.getPropertyValue(name).trim());
   const family = getComputedStyle(element).fontFamily;
   const palette = palettes[theme];
-  // Plotly puede mutar sus entradas: nunca pasarle la instantánea persistida.
   const data = structuredClone(figure.data) as unknown as Trace[];
   const layout = structuredClone(figure.layout) as unknown as Partial<Layout> & { barcornerradius?: number };
   data.forEach((trace, index) => {
@@ -81,7 +90,6 @@ function themedFigure(figure: PlotlyFigure, element: HTMLElement, theme: "light"
     }
   });
   layout.barcornerradius = 4;
-  // El título se muestra en la tarjeta y la nota de filas ya está en el texto de la respuesta.
   layout.title = { text: "" };
   layout.annotations = [];
   layout.height = CHART_HEIGHT;
@@ -93,7 +101,6 @@ function themedFigure(figure: PlotlyFigure, element: HTMLElement, theme: "light"
   layout.legend = { ...layout.legend, orientation: "h", x: 0, y: 1.02, yanchor: "bottom", font: { color: secondary },
     ...(labels?.legend_title && { title: { text: escapeMarkup(labels.legend_title) } }) };
   layout.modebar = { bgcolor: "rgba(0,0,0,0)", color: secondary, activecolor: foreground };
-  // Los rótulos legibles del backend (unidad única y tipográfica) reemplazan los de la figura validada.
   for (const [axis, key, text] of [[layout.xaxis, "x", labels?.x_title], [layout.yaxis, "y", labels?.y_title]] as const) {
     if (!axis) continue;
     Object.assign(axis, {
@@ -114,6 +121,9 @@ function themedFigure(figure: PlotlyFigure, element: HTMLElement, theme: "light"
   return { data, layout, config };
 }
 
+//
+// Renderiza una figura de Plotly con el tema actual y se ajusta al ancho disponible.
+//
 export function PlotlyChart({ figure, title, labels }: { figure: PlotlyFigure; title: string; labels?: Labels }) {
   const container = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();

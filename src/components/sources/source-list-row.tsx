@@ -10,6 +10,9 @@ type SourceListRowProps = {
   onToggle: () => void;
 };
 
+//
+// Muestra una fuente del catálogo con su estado, tamaño, fecha y control de activación.
+//
 export function SourceListRow({ source, busy, onSelect, onToggle }: SourceListRowProps) {
   return (
     <li className="relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 rounded-md bg-surface/80 px-4 py-3.5 border border-border/70 transition-colors hover:bg-surface-elevated/55 lg:min-h-[88px] lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,1.1fr)_minmax(78px,0.35fr)_minmax(138px,0.65fr)_44px_44px] lg:py-4">

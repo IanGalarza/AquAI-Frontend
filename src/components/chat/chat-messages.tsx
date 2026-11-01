@@ -12,6 +12,9 @@ type ChatMessagesProps = {
   checking: boolean;
 };
 
+//
+// Muestra un aviso de estado con puntos animados mientras se genera una respuesta.
+//
 function GenerationStatus({ children }: { children: string }) {
   return <p role="status" className="flex items-center gap-2.5 text-[15px] text-foreground-secondary">
     <span className="flex gap-1" aria-hidden="true">{[0, 1, 2].map((dot) => <span key={dot} className="size-1.5 animate-pulse rounded-full bg-primary/70" style={{ animationDelay: `${dot * 180}ms` }} />)}</span>
@@ -19,6 +22,9 @@ function GenerationStatus({ children }: { children: string }) {
   </p>;
 }
 
+//
+// Muestra la cabecera de un mensaje del asistente con duración y etiquetas de estado.
+//
 function AssistantHeader({ message }: { message?: Message }) {
   const snapshot = message && assistantSnapshot(message);
   const milliseconds = message?.presentation?.duration_ms;
@@ -40,6 +46,9 @@ function AssistantHeader({ message }: { message?: Message }) {
   </div>;
 }
 
+//
+// Muestra el cuerpo de una respuesta: estado de generación, respuesta estructurada o texto plano.
+//
 function AssistantBody({ message }: { message: Message }) {
   if (generationActive(message)) {
     return <GenerationStatus>{generationLeaseExpired(message) ? "La generación sigue pendiente en el servidor. Comprobá el estado antes de continuar." : GENERATING}</GenerationStatus>;
@@ -52,6 +61,9 @@ function AssistantBody({ message }: { message: Message }) {
   </>;
 }
 
+//
+// Muestra la lista de mensajes de la conversación y el estado de procesamiento.
+//
 export function ChatMessages({ messages, processing, checking }: ChatMessagesProps) {
   const hasActive = messages.some(generationActive);
   return (

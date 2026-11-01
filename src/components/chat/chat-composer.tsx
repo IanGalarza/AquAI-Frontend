@@ -10,6 +10,9 @@ type ChatComposerProps = {
   processing?: boolean;
 };
 
+//
+// Muestra el campo para escribir y enviar una consulta, limitada a 6000 caracteres.
+//
 export function ChatComposer({ value, onChange, onSend, inputRef, disabled = false, processing = false }: ChatComposerProps) {
   const canSend = !disabled && value.trim().length > 0 && value.trim().length <= 6000;
 

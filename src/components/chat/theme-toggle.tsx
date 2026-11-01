@@ -3,6 +3,9 @@
 import { useTheme } from "@/hooks";
 import { ChatIcon } from "./chat-icon";
 
+//
+// Muestra el botón que alterna entre tema claro y oscuro.
+//
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const label = theme === null ? "Alternar tema" : `Activar modo ${theme === "dark" ? "claro" : "oscuro"}`;

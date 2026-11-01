@@ -15,10 +15,16 @@ const PlotlyChart = dynamic(() => import("./plotly-chart").then((module) => modu
 
 type ResolveCitations = (ids: string[]) => Citation[];
 
+//
+// Formatea una cantidad de filas con su singular o plural según el idioma.
+//
 function rowCount(rows: number, language: Language): string {
   return `${formatScientificNumber(rows, language)} ${rows === 1 ? "fila" : "filas"}`;
 }
 
+//
+// Muestra un párrafo o nota de la respuesta, con sus viñetas y citas.
+//
 function Segment({ segment, resolve }: { segment: AnswerSegment; resolve: ResolveCitations }) {
   const chip = <CitationChip citations={resolve(segment.citations)} />;
   if (segment.kind === "note") {
@@ -35,6 +41,9 @@ function Segment({ segment, resolve }: { segment: AnswerSegment; resolve: Resolv
   </div>;
 }
 
+//
+// Muestra una tabla de resultados con sus unidades, valores formateados y citas.
+//
 function ResultTable({ table, view, language, citations }: { table: StoredTable; view?: TableView; language: Language; citations: Citation[] }) {
   const captionId = useId();
   const columns = new Map(view?.columns.map((column) => [column.name, column]));
@@ -76,6 +85,9 @@ function ResultTable({ table, view, language, citations }: { table: StoredTable;
   </figure>;
 }
 
+//
+// Muestra un gráfico de la respuesta con su título y citas.
+//
 function Chart({ chart, view, citations }: { chart: Visualization; view?: ChartView; citations: Citation[] }) {
   return <figure className="min-w-0 overflow-hidden rounded-lg border border-border/70 bg-surface" data-visualization={chart.operation_id}>
     <figcaption className="flex items-start justify-between gap-3 px-4 pt-3.5">
@@ -87,6 +99,9 @@ function Chart({ chart, view, citations }: { chart: Visualization; view?: ChartV
   </figure>;
 }
 
+//
+// Renderiza una respuesta del asistente con sus segmentos, tablas y gráficos.
+//
 export function ChatResponse({ snapshot, presentation }: { snapshot: AssistantSnapshot; presentation: MessagePresentation }) {
   const { language, results, visualizations } = snapshot.response;
   const citations = new Map(presentation.citations.map((citation) => [citation.id, citation]));
@@ -96,7 +111,6 @@ export function ChatResponse({ snapshot, presentation }: { snapshot: AssistantSn
   const charts = new Map(visualizations.map((chart) => [chart.operation_id, chart]));
   const chartViews = new Map(presentation.charts.map((view) => [view.operation_id, view]));
 
-  // Una tabla o un gráfico que sigue a su párrafo no repite la cita que ese párrafo ya muestra.
   function table(key: string, cited: string[] = []) {
     const item = tables.get(key);
     const view = tableViews.get(key);

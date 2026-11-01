@@ -16,7 +16,6 @@ const particles = [
   { left: "97%", top: "75%", size: 2, drift: 10, rise: 16, duration: 27 },
 ].map((particle) => ({
   ...particle,
-  // Un circuito periódico evita frenadas y cambios bruscos al cerrar cada vuelta.
   orbit: Array.from({ length: ORBIT_SAMPLES + 1 }, (_, frame) => {
     const phase = (frame / ORBIT_SAMPLES) * Math.PI * 2;
     const x = particle.drift * Math.sin(phase);
@@ -28,6 +27,9 @@ const particles = [
   ),
 }));
 
+//
+// Renderiza el resplandor y las partículas animadas del fondo de agua.
+//
 export function WaterAtmosphere({ canAnimate }: { canAnimate: boolean }) {
   const atmosphereRef = useRef<HTMLDivElement>(null);
 
@@ -64,7 +66,6 @@ export function WaterAtmosphere({ canAnimate }: { canAnimate: boolean }) {
       ));
     });
 
-    // Se cancelan las animaciones nativas al ocultar la pestaña o reducir el movimiento.
     return () => animations.forEach((animation) => animation.cancel());
   }, [canAnimate]);
 

@@ -6,6 +6,9 @@ import { placeFloating, revealFloating } from "@/utils/floating";
 const OPEN_DELAY_MS = 1000;
 const CLOSE_DELAY_MS = 120;
 
+//
+// Gestiona un tooltip emergente con retardo de apertura y cierre, y devuelve sus props.
+//
 export function useTooltip<T extends HTMLElement>(content: ReactNode) {
   const id = useId();
   const triggerRef = useRef<T>(null);

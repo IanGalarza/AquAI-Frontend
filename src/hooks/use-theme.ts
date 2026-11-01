@@ -3,6 +3,9 @@
 import { useContext } from "react";
 import { ThemeContext } from "@/providers/theme-provider";
 
+//
+// Expone el tema actual y su setter desde el proveedor de tema.
+//
 export function useTheme() {
   const context = useContext(ThemeContext);
 

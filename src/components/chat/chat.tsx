@@ -7,6 +7,9 @@ import { ChatComposer } from "./chat-composer";
 import { ChatMessages } from "./chat-messages";
 import { ChatWelcome } from "./chat-welcome";
 
+//
+// Muestra el chat completo: conversación activa, mensajes, bienvenida y campo de envío.
+//
 export function Chat() {
   const chat = useConversations();
   const scrollRef = useRef<HTMLDivElement>(null);

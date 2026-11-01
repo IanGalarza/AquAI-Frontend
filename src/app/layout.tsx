@@ -25,6 +25,9 @@ export const metadata: Metadata = {
   },
 };
 
+//
+// Define el documento HTML raíz con fuentes, tema y la ranura de fuentes.
+//
 export default function RootLayout({ children, sources }: LayoutProps<"/">) {
   return (
     <html

@@ -22,7 +22,6 @@ const waveLayers = [
   { name: "front", baseline: 80, amplitude: 168, frequency: 1.1, phase: 0, duration: 40, opacity: 0.18, strokeOpacity: 0.8 },
 ].map((layer) => ({
   ...layer,
-  // D3 genera las curvas una sola vez. Motion interpola su forma sin volver a renderizar React.
   frames: Array.from({ length: FRAME_COUNT + 1 }, (_, frame) => {
     const phase = layer.phase + (frame / FRAME_COUNT) * Math.PI * 2;
     const points = Array.from({ length: POINT_COUNT + 1 }, (_, point): WavePoint => {
@@ -36,6 +35,9 @@ const waveLayers = [
   }),
 }));
 
+//
+// Renderiza las olas animadas del fondo con capas SVG.
+//
 export function WaterWaves() {
   const gradientId = useId();
   const wavesRef = useRef<SVGSVGElement>(null);

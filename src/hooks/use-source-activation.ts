@@ -10,6 +10,9 @@ type ActivationOptions = {
   request?: typeof setSourceActive;
 };
 
+//
+// Gestiona la activación y desactivación de fuentes, evitando solicitudes duplicadas.
+//
 export function useSourceActivation({ onSuccess, onError, request = setSourceActive }: ActivationOptions) {
   const [pending, setPending] = useState<ReadonlySet<string>>(() => new Set());
   const controllers = useRef(new Map<string, AbortController>());
@@ -23,7 +26,6 @@ export function useSourceActivation({ onSuccess, onError, request = setSourceAct
   }, []);
 
   const toggle = useCallback(async (source: { id: string; isActive: boolean }) => {
-    // El lock es inmediato, incluso antes del siguiente render de React.
     if (controllers.current.has(source.id)) return;
     const controller = new AbortController();
     controllers.current.set(source.id, controller);

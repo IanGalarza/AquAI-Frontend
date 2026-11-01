@@ -24,6 +24,9 @@ type MobileNavigationProps = {
   conversationSidebar?: ChatSidebarProps;
 };
 
+//
+// Muestra el menú móvil que abre la barra de conversaciones en un panel deslizante.
+//
 export function MobileNavigation({ onNewConversation, conversationSidebar }: MobileNavigationProps) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -99,7 +102,6 @@ export function MobileNavigation({ onNewConversation, conversationSidebar }: Mob
     outsidePointerRef.current = null;
     setIsOpen(false);
 
-    // Una salida anterior nunca debe cerrar una reapertura o un cambio de pantalla.
     void controls.start("closed").then(() => {
       if (transitionId === transitionIdRef.current && !openRef.current) {
         dialogRef.current?.close();

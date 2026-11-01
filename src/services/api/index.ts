@@ -10,16 +10,25 @@ const httpMessages: Record<number, string> = {
 };
 
 export class ApiError extends Error {
+  //
+  // Crea un error de la API con su estado HTTP, mensaje y cuerpo de respuesta.
+  //
   constructor(public readonly status: number, message: string, public readonly body: unknown = null) {
     super(message);
     this.name = "ApiError";
   }
 }
 
+//
+// Indica si un error es transitorio y conviene reintentar la solicitud.
+//
 export function isTransientError(error: unknown): boolean {
   return !(error instanceof ApiError) || error.status >= 500 || error.status === 429;
 }
 
+//
+// Devuelve un mensaje legible para el usuario a partir de un error.
+//
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) return error.message;
   if (error instanceof Error && error.name === "TimeoutError") {
@@ -34,6 +43,9 @@ type RequestPolicy = {
   appendDetail?: boolean;
 };
 
+//
+// Envía una solicitud al backend y devuelve su JSON o lanza un ApiError.
+//
 export async function apiRequest<T>(path: string, options: RequestInit = {}, policy: RequestPolicy = {}): Promise<T> {
   if (!backendUrl) throw new ApiError(0, "Falta configurar NEXT_PUBLIC_BACKEND_URL en el frontend.");
   const timeout = AbortSignal.timeout(policy.timeoutMs ?? (options.method === "POST" ? 60_000 : 30_000));

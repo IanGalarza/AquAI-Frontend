@@ -22,6 +22,9 @@ type SourceManagerProps = {
   onBack?: () => void;
 };
 
+//
+// Muestra el administrador de fuentes: listado, búsqueda, subida, detalle y activación.
+//
 export function SourceManager({ onBack }: SourceManagerProps) {
   const [query, setQuery] = useState<{ page: number; name: string; sort: SourceSort }>({ page: 1, name: "", sort: "newest" });
   const [search, setSearch] = useState("");

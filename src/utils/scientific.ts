@@ -1,10 +1,15 @@
 import type { Language } from "@/types/conversations";
 
-// Como en el texto del backend, los enteros de cuatro cifras (p. ej., años) no se agrupan.
+//
+// Agrupa los miles de un entero, salvo los de menos de cinco cifras.
+//
 function groupThousands(integer: string, separator: string): string {
   return integer.length < 5 ? integer : integer.replace(/\B(?=(\d{3})+$)/g, separator);
 }
 
+//
+// Formatea un número con redondeo, separadores y notación científica según el idioma.
+//
 export function formatScientificNumber(value: string | number, language: Language = "es"): string {
   const raw = String(value);
   const match = /^([+-]?)(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/.exec(raw);

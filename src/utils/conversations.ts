@@ -2,6 +2,9 @@ import type { AssistantSnapshot, ChatMessage, Conversation, JsonValue, Language,
 import { ApiError } from "@/services/api";
 import { formatScientificNumber } from "@/utils/scientific";
 
+//
+// Indica si un valor tiene la forma de un mensaje del backend.
+//
 export function isMessage(value: unknown): value is Message {
   if (!value || typeof value !== "object") return false;
   const item = value as Partial<Message>;
@@ -11,7 +14,9 @@ export function isMessage(value: unknown): value is Message {
     typeof item.status?.name === "string" && Array.isArray(item.sources);
 }
 
-// Las versiones desconocidas conservan su texto; no se reinterpretan como figuras/tablas actuales.
+//
+// Devuelve la instantánea estructurada de un mensaje del asistente, o null si no es válida.
+//
 export function assistantSnapshot(message: Message): AssistantSnapshot | null {
   const data = message.content_data;
   if (data.schema_version !== 1 || data.kind !== "assistant_response" || !data.response || typeof data.response !== "object" || Array.isArray(data.response)) return null;
@@ -27,16 +32,25 @@ export function assistantSnapshot(message: Message): AssistantSnapshot | null {
   return data as unknown as AssistantSnapshot;
 }
 
+//
+// Indica si el mensaje del asistente sigue generándose.
+//
 export function generationActive(message: ChatMessage): boolean {
   return !("optimistic" in message) && message.role === "assistant" && ["pending", "processing"].includes(message.status.name);
 }
 
+//
+// Indica si venció el plazo de una generación aún pendiente.
+//
 export function generationLeaseExpired(message: ChatMessage): boolean {
   if (!generationActive(message) || "optimistic" in message) return false;
   const lease = message.content_data.lease_expires_at;
   return typeof lease === "string" && Number.isFinite(Date.parse(lease)) && Date.parse(lease) < Date.now();
 }
 
+//
+// Combina mensajes recibidos con los actuales y los ordena por secuencia.
+//
 export function mergeMessages(current: ChatMessage[], incoming: Message[], pending?: { content: string; baseline: number }): ChatMessage[] {
   const confirmed = pending && incoming.some((item) => item.role === "user" && item.sequence_number > pending.baseline && item.content === pending.content);
   const messages = new Map(current.filter((item) => !(confirmed && "optimistic" in item)).map((item) => [item.id, item]));
@@ -44,7 +58,6 @@ export function mergeMessages(current: ChatMessage[], incoming: Message[], pendi
     const previous = messages.get(item.id);
     if (previous && !("optimistic" in previous)) {
       const difference = Date.parse(previous.updated_at ?? previous.created_at) - Date.parse(item.updated_at ?? item.created_at);
-      // Una relectura sin cambios conserva el objeto: evita volver a dibujar sus gráficos.
       const unchanged = difference === 0 && previous.status.name === item.status.name;
       if (difference > 0 || unchanged || (!generationActive(previous) && generationActive(item))) continue;
     }
@@ -57,6 +70,9 @@ export function mergeMessages(current: ChatMessage[], incoming: Message[], pendi
   });
 }
 
+//
+// Combina conversaciones recibidas con las actuales y las ordena por actividad reciente.
+//
 export function mergeConversations(current: Conversation[], incoming: Conversation[]): Conversation[] {
   const items = new Map(current.map((item) => [item.id, item]));
   for (const item of incoming) {
@@ -69,6 +85,9 @@ export function mergeConversations(current: Conversation[], incoming: Conversati
   });
 }
 
+//
+// Devuelve el mensaje de error legible para un fallo de conversaciones.
+//
 export function conversationError(error: unknown): string {
   if (error instanceof ApiError) return error.message;
   if (error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) {
@@ -79,7 +98,9 @@ export function conversationError(error: unknown): string {
 
 const isoDate = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/;
 
-// Una fecha que agrupa un mes o un año se muestra con esa precisión, sin sugerir un día concreto.
+//
+// Formatea un valor de celda para mostrarlo según su tipo, idioma y granularidad temporal.
+//
 export function displayValue(value: JsonValue | undefined, field?: OutputField, language: Language = "es", grain: TimeGrain | null = null): string {
   if (value === null || value === undefined) return "Sin dato";
   if (typeof value === "boolean") return value ? "Sí" : "No";
@@ -98,7 +119,9 @@ export function displayValue(value: JsonValue | undefined, field?: OutputField, 
   return typeof value === "object" ? JSON.stringify(value) : String(value);
 }
 
-// Duración real del turno informada por el servidor, redondeada a la precisión que se muestra.
+//
+// Formatea una duración en milisegundos como texto legible.
+//
 export function formatDuration(milliseconds: number): string | null {
   if (!Number.isFinite(milliseconds) || milliseconds < 0) return null;
   const tenths = Math.round(milliseconds / 100);

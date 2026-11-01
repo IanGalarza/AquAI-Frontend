@@ -20,9 +20,16 @@ type Thread = {
   notice: string | null;
 };
 type Pending = { content: string; baseline: number; optimisticId: string; phase: "sending" | "checking" };
+
+//
+// Crea el estado inicial vacío de un hilo de conversación.
+//
 const emptyThread = (): Thread => ({ conversation: null, messages: [], total: 0, oldestPage: 1,
   loading: false, loadingOlder: false, checked: false, error: null, notice: null });
 
+//
+// Gestiona las conversaciones, sus mensajes, el envío de consultas y la selección activa.
+//
 export function useConversations() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectionReady, setSelectionReady] = useState(false);
@@ -59,7 +66,6 @@ export function useConversations() {
     url.pathname = "/";
     if (id) url.searchParams.set("conversation", id);
     else url.searchParams.delete("conversation");
-    // Repetir la selección actual no agrega entradas al historial del navegador.
     if (url.href !== window.location.href) window.history.pushState(null, "", `${url.pathname}${url.search}`);
   }, []);
 
@@ -71,7 +77,6 @@ export function useConversations() {
     setListError(null);
     const lastPage = loadMore ? Math.max(1, pagesRef.current + 1) : Math.max(1, pagesRef.current);
     try {
-      // Releer las páginas cargadas evita saltos por cambios en el orden de actividad.
       const pages = await Promise.all(Array.from({ length: lastPage }, (_, index) => api.listConversations(index + 1, controller.signal)));
       if (controller.signal.aborted) return;
       setConversations(mergeConversations([], pages.flatMap((page) => page.items)));
@@ -114,7 +119,6 @@ export function useConversations() {
 
   useEffect(() => {
     function readSelection() {
-      // Una ruta interceptada de fuentes no reinicia el chat que permanece debajo.
       if (window.location.pathname !== "/") return;
       const id = new URL(window.location.href).searchParams.get("conversation");
       setSelectedId(id);
@@ -146,9 +150,7 @@ export function useConversations() {
 
   const key = selectedId ?? NEW;
   const thread = threads[key] ?? emptyThread();
-  // El listado ya trae el título: se usa mientras se lee la conversación elegida.
   const conversation = thread.conversation ?? conversations.find((item) => item.id === selectedId) ?? null;
-  // Una conversación elegida que nunca se leyó todavía no tiene contenido: no es una conversación nueva.
   const opening = !!selectedId && !thread.conversation && !thread.error;
   const activeMessage = thread.messages.find((message) => generationActive(message) && !generationLeaseExpired(message));
   const isSending = !!pending[key];
@@ -164,7 +166,6 @@ export function useConversations() {
     const controller = new AbortController();
     async function poll() {
       try {
-        // Una fila por sondeo: no descargar de nuevo tablas/figuras históricas.
         let page = await api.getMessages(selectedId!, knownTotal, 1, controller.signal);
         if (page.total > 0 && page.total !== knownTotal) page = await api.getMessages(selectedId!, page.total, 1, controller.signal);
         if (stopped) return;
@@ -208,7 +209,6 @@ export function useConversations() {
     return () => { stopped = true; clearTimeout(timer); controller.abort(); };
   }, [selectedId, shouldPoll, thread.total, refreshList, refreshThread, finishCheck, updateThread]);
 
-  // Una conversación nueva es sólo un borrador: se guarda recién con el primer mensaje (send).
   const newConversation = () => {
     updateThread(NEW, (current) => ({ ...current, notice: null }));
     navigate(null);
@@ -217,9 +217,7 @@ export function useConversations() {
   async function renameConversation(id: string, title: string) {
     const conversation = await api.renameConversation(id, title);
     setConversations((current) => mergeConversations(current, [conversation]));
-    // Sólo se actualiza un hilo ya leído: crear uno vacío lo haría pasar por una conversación nueva.
     setThreads((current) => current[id] ? { ...current, [id]: { ...current[id], conversation } } : current);
-    // Releer el listado descarta una lectura anterior al cambio que traería el título viejo.
     void refreshList();
   }
 
@@ -227,7 +225,6 @@ export function useConversations() {
     try {
       await api.deleteConversation(id);
     } catch (error) {
-      // Si otra pestaña ya la eliminó, el resultado buscado se cumplió.
       if (!(error instanceof ApiError && error.status === 404)) throw error;
     }
     setConversations((current) => current.filter((item) => item.id !== id));

@@ -6,12 +6,21 @@ import type { Citation, CitationVariable } from "@/types/conversations";
 import { placeFloating, revealFloating } from "@/utils/floating";
 import { ChatIcon } from "./chat-icon";
 
+//
+// Suscripción vacía para detectar el entorno cliente con useSyncExternalStore.
+//
 const noSubscription = () => () => {};
 
+//
+// Devuelve el nombre del archivo de una cita sin su extensión de planilla.
+//
 function shortName(citation: Citation): string {
   return citation.file_name.replace(/\.(xlsx|xlsm|xls|csv)$/i, "");
 }
 
+//
+// Muestra la ubicación (columna, fila y celdas) de una variable citada.
+//
 function VariableLocation({ variable }: { variable: CitationVariable }) {
   const position = variable.column ? `Columna ${variable.column}` : variable.row ? `Fila ${variable.row}` : null;
   return <li className="min-w-0">
@@ -22,7 +31,9 @@ function VariableLocation({ variable }: { variable: CitationVariable }) {
   </li>;
 }
 
-// Dónde está cada dato en la planilla original: hoja, filas con registros y columna o celdas de cada variable.
+//
+// Muestra la procedencia de una cita: archivo, hoja, filas, variables y versión.
+//
 function CitationDetail({ citation }: { citation: Citation }) {
   const location = citation.sheet ?? (citation.dataset && citation.dataset !== shortName(citation) ? citation.dataset : null);
   const rows = citation.first_row != null && citation.last_row != null
@@ -42,18 +53,18 @@ function CitationDetail({ citation }: { citation: Citation }) {
   </li>;
 }
 
-// Indicador discreto de las fuentes de una afirmación; al pulsarlo muestra su procedencia.
+//
+// Renderiza el indicador de fuentes de una afirmación con un detalle emergente.
+//
 export function CitationChip({ citations }: { citations: Citation[] }) {
   const id = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
-  // El detalle usa listas: se monta en el body (capa superior) y no dentro del párrafo citado.
   const client = useSyncExternalStore(noSubscription, () => true, () => false);
   const popoverRef = useCallback((element: HTMLDivElement | null) => {
     if (!element) return;
     const popover: HTMLDivElement = element;
     const close = () => { if (popover.matches(":popover-open")) popover.hidePopover(); };
     const onScroll = (event: Event) => { if (!(event.target instanceof Node && popover.contains(event.target))) close(); };
-    // Mientras está abierto, un desplazamiento o cambio de tamaño lo separaría de su indicador.
     function onToggle(event: Event) {
       const open = (event as ToggleEvent).newState === "open";
       document[open ? "addEventListener" : "removeEventListener"]("scroll", onScroll, true);

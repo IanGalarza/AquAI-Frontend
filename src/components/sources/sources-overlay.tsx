@@ -4,6 +4,9 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { SourceManager } from "./source-manager";
 
+//
+// Muestra el administrador de fuentes en un diálogo a pantalla completa sobre el chat.
+//
 export function SourcesOverlay() {
   const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -12,7 +15,6 @@ export function SourcesOverlay() {
     const dialog = dialogRef.current;
     if (!dialog) return;
 
-    // La ruta paralela conserva el chat montado; el diálogo lo vuelve inerte.
     dialog.showModal();
     dialog.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true });
 

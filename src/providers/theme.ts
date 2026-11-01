@@ -3,11 +3,13 @@ export type Theme = "light" | "dark";
 export const THEME_STORAGE_KEY = "aquai-theme";
 export const SYSTEM_THEME_QUERY = "(prefers-color-scheme: dark)";
 
+//
+// Indica si un valor es un tema válido.
+//
 export function isTheme(value: unknown): value is Theme {
   return value === "light" || value === "dark";
 }
 
-// Se ejecuta antes del pintado. Si falla el almacenamiento, usa la preferencia del sistema.
 export const themeInitializationScript = `
   (() => {
     let theme = null;

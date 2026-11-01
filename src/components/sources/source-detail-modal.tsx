@@ -13,6 +13,9 @@ type SourceDetailModalProps = {
   refreshing: boolean;
 };
 
+//
+// Muestra el detalle de una fuente en un diálogo modal con acciones de actualizar y cerrar.
+//
 export function SourceDetailModal({ children, source, onClose, onRefresh, refreshing }: SourceDetailModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);

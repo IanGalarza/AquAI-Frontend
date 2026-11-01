@@ -12,6 +12,9 @@ type ConfirmDialogProps = {
   onCancel: () => void;
 };
 
+//
+// Muestra un diálogo modal de confirmación con acciones de aceptar y cancelar.
+//
 export function ConfirmDialog({ title, children, busy = false, error, onConfirm, onCancel }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -38,7 +41,6 @@ export function ConfirmDialog({ title, children, busy = false, error, onConfirm,
         if (!busy) close();
       }}
       onClose={(event) => {
-        // También cubre un cierre nativo que el navegador no permite cancelar.
         if (!event.currentTarget.open) onCancel();
       }}
       className="fixed inset-0 m-auto h-fit w-[92vw] max-w-[420px] rounded-md border border-border bg-background p-6 text-foreground shadow-2xl backdrop:bg-black/55"

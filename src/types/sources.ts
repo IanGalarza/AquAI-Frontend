@@ -1,18 +1,34 @@
 export type ProcessingStatus = "uploaded" | "processing" | "ready" | "ready_with_warnings" | "failed";
 export type SemanticIndexStatus = "pending" | "processing" | "ready" | "failed";
 export type SourceSort = "newest" | "oldest" | "name_asc" | "name_desc";
+
+//
+// Filtros del listado de fuentes por nombre y orden.
+//
 export type SourceListFilters = { name?: string; sort?: SourceSort };
 
+//
+// Estado de preparación y de búsqueda de una fuente.
+//
 export type SourceState = {
   id: string;
   processing_status: ProcessingStatus;
   semantic_index_status: SemanticIndexStatus;
 };
 
+//
+// Respuesta del backend al aceptar la subida de una fuente.
+//
 export type SourceAccepted = { id: string; duplicate: boolean };
 
+//
+// Respuesta de la activación o desactivación de una fuente.
+//
 export type SourceActivation = SourceState & { isActive: boolean; queryable: boolean };
 
+//
+// Fuente tal como aparece en el listado.
+//
 export type SourceListItem = SourceState & {
   name: string;
   file_type: string;
@@ -22,6 +38,9 @@ export type SourceListItem = SourceState & {
   dataset_count: number;
 };
 
+//
+// Respuesta paginada del listado de fuentes.
+//
 export type SourceList = {
   items: SourceListItem[];
   total: number;
@@ -29,6 +48,9 @@ export type SourceList = {
   page_size: number;
 };
 
+//
+// Metadatos de una columna de un conjunto de datos.
+//
 export type ColumnMetadata = {
   original_name: string;
   sql_name: string;
@@ -42,6 +64,9 @@ export type ColumnMetadata = {
   header_missing?: boolean;
 };
 
+//
+// Detalle de un conjunto de datos de una fuente.
+//
 export type DatasetDetail = {
   id: string;
   name: string;
@@ -58,6 +83,9 @@ export type DatasetDetail = {
   queryable: boolean;
 };
 
+//
+// Detalle de una fuente con su informe de procesamiento y conjuntos de datos.
+//
 export type SourceDetail = SourceState & {
   original_filename: string;
   file_type: string;

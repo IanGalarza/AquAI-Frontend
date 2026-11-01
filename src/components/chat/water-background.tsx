@@ -6,6 +6,9 @@ import { WaterWaves } from "./water-waves";
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
+//
+// Suscribe un cambio a la preferencia de movimiento reducido y a la visibilidad de la pestaña.
+//
 function subscribeToAnimationPreference(onChange: () => void) {
   const mediaQuery = window.matchMedia(REDUCED_MOTION_QUERY);
   mediaQuery.addEventListener("change", onChange);
@@ -17,10 +20,16 @@ function subscribeToAnimationPreference(onChange: () => void) {
   };
 }
 
+//
+// Indica si el fondo puede animarse según el movimiento reducido y la visibilidad.
+//
 function getAnimationSnapshot() {
   return !window.matchMedia(REDUCED_MOTION_QUERY).matches && document.visibilityState === "visible";
 }
 
+//
+// Devuelve que no hay animación en el servidor para coincidir con la hidratación.
+//
 function getServerAnimationSnapshot() {
   return false;
 }
@@ -29,6 +38,9 @@ type WaterBackgroundProps = {
   subdued?: boolean;
 };
 
+//
+// Muestra el fondo de agua, animado o atenuado según la preferencia del usuario.
+//
 export function WaterBackground({ subdued = false }: WaterBackgroundProps) {
   const canAnimate = useSyncExternalStore(
     subscribeToAnimationPreference,

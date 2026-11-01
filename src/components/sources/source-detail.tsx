@@ -9,6 +9,9 @@ import { ProcessingBadge, SemanticBadge, SourceToggle } from "./source-status";
 
 type IconName = ComponentProps<typeof ChatIcon>["name"];
 
+//
+// Muestra un dato rotulado con su ícono dentro de una lista de descripción.
+//
 function Information({ label, icon, children }: { label: string; icon: IconName; children: ReactNode }) {
   return (
     <div className="min-w-0">
@@ -18,6 +21,9 @@ function Information({ label, icon, children }: { label: string; icon: IconName;
   );
 }
 
+//
+// Muestra un bloque desplegable con la lista de advertencias.
+//
 function Warnings({ warnings, title = "Advertencias" }: { warnings: string[]; title?: string }) {
   if (warnings.length === 0) return null;
   return (
@@ -34,6 +40,9 @@ function Warnings({ warnings, title = "Advertencias" }: { warnings: string[]; ti
   );
 }
 
+//
+// Devuelve la etiqueta y el ícono que corresponden al tipo SQL de una columna.
+//
 function columnType(type: string): { label: string; icon: IconName } {
   if (/INT|NUMERIC|DECIMAL|REAL|FLOAT|DOUBLE/i.test(type)) return { label: "Número", icon: "hash" };
   if (/TIMESTAMP|DATETIME/i.test(type)) return { label: "Fecha y hora", icon: "calendar" };
@@ -42,6 +51,9 @@ function columnType(type: string): { label: string; icon: IconName } {
   return { label: "Texto", icon: "text" };
 }
 
+//
+// Muestra una columna de un conjunto de datos con su tipo, unidad y ayuda emergente.
+//
 function ColumnCard({ column, columns }: { column: ColumnMetadata; columns: ColumnMetadata[] }) {
   const type = columnType(column.sql_type);
   const auxiliary = column.representation === "numeric_projection";
@@ -72,6 +84,9 @@ function ColumnCard({ column, columns }: { column: ColumnMetadata; columns: Colu
   );
 }
 
+//
+// Muestra la descripción de un conjunto de datos, expandible si es larga.
+//
 function DatasetDescription({ description }: { description: string }) {
   const [expanded, setExpanded] = useState(false);
   const id = useId();
@@ -85,6 +100,9 @@ function DatasetDescription({ description }: { description: string }) {
   );
 }
 
+//
+// Muestra un conjunto de datos con su estado, registros, advertencias y columnas.
+//
 function DatasetCard({ dataset }: { dataset: DatasetDetail }) {
   const originalColumns = dataset.columns_metadata.filter((column) => column.representation !== "numeric_projection");
   const auxiliaryColumns = dataset.columns_metadata.filter((column) => column.representation === "numeric_projection");
@@ -131,6 +149,9 @@ function DatasetCard({ dataset }: { dataset: DatasetDetail }) {
   );
 }
 
+//
+// Muestra el detalle de una fuente: estado, fechas, avisos y conjuntos de datos.
+//
 export function SourceDetail({ source, toggling, onToggle }: {
   source: SourceDetailData; toggling: boolean; onToggle: () => void;
 }) {

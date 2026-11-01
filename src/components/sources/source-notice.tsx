@@ -4,6 +4,9 @@ import { useEffect, useRef } from "react";
 import type { Notice } from "../../hooks/use-transient-notice";
 import { ChatIcon } from "../chat/chat-icon";
 
+//
+// Muestra una notificación transitoria como ventana emergente que se puede cerrar.
+//
 export function SourceNotice({ notice, onDismiss }: { notice: Notice | null; onDismiss: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
 

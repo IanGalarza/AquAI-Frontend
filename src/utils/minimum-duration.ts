@@ -1,3 +1,6 @@
+//
+// Ejecuta una solicitud y espera, si hace falta, hasta cumplir una duración mínima.
+//
 export async function withMinimumDuration<T>(
   request: () => Promise<T>,
   minimumMs: number,

@@ -9,6 +9,9 @@ const indexLabels: Record<SemanticIndexStatus, string> = {
   pending: "Pendiente", processing: "Preparando", ready: "Disponible", failed: "No disponible",
 };
 
+//
+// Muestra una insignia de estado con color y, si está en curso, un indicador de espera.
+//
 function Badge({ label, status, busy, compact = false }: { label: string; status: string; busy: boolean; compact?: boolean }) {
   const color = status === "failed" ? "border-error/20 bg-error/5 text-error"
     : status === "ready_with_warnings" ? "border-warning/25 bg-warning/5 text-warning"
@@ -24,15 +27,24 @@ function Badge({ label, status, busy, compact = false }: { label: string; status
   );
 }
 
+//
+// Muestra la insignia del estado de preparación de una fuente.
+//
 export function ProcessingBadge({ status, compact = false }: { status: ProcessingStatus; compact?: boolean }) {
   const label = compact && status === "failed" ? "Falló" : compact && status === "ready" ? "Completado" : processingLabels[status];
   return <Badge label={label} status={status} compact={compact} busy={status === "processing" || status === "uploaded"} />;
 }
 
+//
+// Muestra la insignia del estado de la búsqueda de una fuente.
+//
 export function SemanticBadge({ status, active, compact = false }: { status: SemanticIndexStatus; active: boolean; compact?: boolean }) {
   return <Badge label={active ? indexLabels[status] : "Desactivada"} status={active ? status : "inactive"} compact={compact} busy={active && status === "processing"} />;
 }
 
+//
+// Muestra el interruptor para activar o desactivar una fuente.
+//
 export function SourceToggle({ active, busy, name, onToggle, compact = false }: {
   active: boolean; busy: boolean; name: string; onToggle: () => void; compact?: boolean;
 }) {
@@ -51,6 +63,9 @@ export function SourceToggle({ active, busy, name, onToggle, compact = false }: 
   );
 }
 
+//
+// Muestra un mensaje de error de fuentes con opción de reintentar.
+//
 export function SourceError({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
     <div role="alert" className="rounded-sm bg-error/5 px-4 py-3 text-sm leading-relaxed">

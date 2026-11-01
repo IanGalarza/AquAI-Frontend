@@ -21,6 +21,9 @@ export type ChatSidebarProps = {
   onRefresh?: () => void;
 };
 
+//
+// Muestra la barra lateral con conversaciones, búsqueda y acceso a las fuentes.
+//
 export function ChatSidebar({ onNewConversation, onSourcesNavigate, conversations = [], selectedId, onSelect, onDelete,
   loading = false, creating = false, error, hasMore = false, onLoadMore, onRefresh }: ChatSidebarProps) {
   const searchId = useId();

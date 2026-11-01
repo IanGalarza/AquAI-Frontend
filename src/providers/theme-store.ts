@@ -5,6 +5,9 @@ import { isTheme, SYSTEM_THEME_QUERY, THEME_STORAGE_KEY, type Theme } from "./th
 const listeners = new Set<() => void>();
 let selectedTheme: Theme | null = null;
 
+//
+// Lee el tema guardado en el almacenamiento local, si es válido.
+//
 function readStoredTheme(): Theme | null {
   try {
     const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
@@ -14,21 +17,32 @@ function readStoredTheme(): Theme | null {
   }
 }
 
+//
+// Aplica el tema al documento y avisa a los suscriptores.
+//
 function applyTheme(theme: Theme): void {
   document.documentElement.dataset.theme = theme;
   listeners.forEach((listener) => listener());
 }
 
+//
+// Devuelve el tema aplicado actualmente en el documento.
+//
 export function getThemeSnapshot(): Theme | null {
   const theme = document.documentElement.dataset.theme;
   return isTheme(theme) ? theme : null;
 }
 
-// El renderizado del servidor y la primera hidratación deben exponer el mismo estado.
+//
+// Devuelve el estado del tema en el servidor, siempre sin definir.
+//
 export function getServerThemeSnapshot(): null {
   return null;
 }
 
+//
+// Suscribe un oyente a los cambios de tema y sincroniza con la preferencia del sistema.
+//
 export function subscribeToTheme(listener: () => void): () => void {
   const systemTheme = window.matchMedia(SYSTEM_THEME_QUERY);
 
@@ -49,6 +63,9 @@ export function subscribeToTheme(listener: () => void): () => void {
   };
 }
 
+//
+// Establece el tema, lo aplica y lo guarda en el almacenamiento local.
+//
 export function setTheme(theme: Theme): void {
   selectedTheme = theme;
   applyTheme(theme);

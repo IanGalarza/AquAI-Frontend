@@ -11,6 +11,9 @@ type ChatWelcomeProps = {
   disabled?: boolean;
 };
 
+//
+// Muestra la bienvenida con consultas de ejemplo que se pueden enviar.
+//
 export function ChatWelcome({ onSend, disabled = false }: ChatWelcomeProps) {
   return (
     <section aria-labelledby="welcome-title" className="chat-welcome relative z-10 flex min-h-full flex-col items-center justify-center px-5 py-10 text-center sm:px-8">
