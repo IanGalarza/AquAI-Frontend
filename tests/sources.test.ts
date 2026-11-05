@@ -1,17 +1,19 @@
+import "./setup";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ApiError, apiRequest, errorMessage, isTransientError } from "../src/services/api";
 import { getSource, listSources, setSourceActive, uploadSource } from "../src/services/backend";
 import type { SourceDetail, SourceList } from "../src/types/sources";
-import { MAX_UPLOAD_BYTES, needsListPolling, needsSourcePolling, sourceErrors, validateSourceFile } from "../src/utils/sources";
+import { documentLanguage, isDocumentType, MAX_DOCUMENT_UPLOAD_BYTES, MAX_UPLOAD_BYTES, needsListPolling, needsSourcePolling, sourceErrors, validateSourceFile } from "../src/utils/sources";
 
 const source: SourceDetail = {
-  id: "123", name: "muestra.csv", original_filename: "muestra.csv", file_type: "csv",
-  mime_type: "text/csv", file_size_bytes: 64, processing_status: "ready",
-  semantic_index_status: "ready", duplicate: false, isActive: true,
-  created_at: "2026-10-14T12:00:00Z", updated_at: null,
+  id: "123", original_filename: "muestra.csv", file_type: "csv",
+  file_size_bytes: 64, processing_status: "ready",
+  semantic_index_status: "ready", isActive: true,
+  created_at: "2026-10-14T12:00:00Z",
   description: null, processing_report: {}, datasets: [], queryable: false,
 };
+const listItem = { ...source, name: source.original_filename, dataset_count: 3 };
 
 test("carga multipart individual y conserva la respuesta de duplicado HTTP 202", async (context) => {
   const accepted = { id: source.id, processing_status: "uploaded", semantic_index_status: "pending", duplicate: true };
@@ -28,7 +30,7 @@ test("carga multipart individual y conserva la respuesta de duplicado HTTP 202",
 });
 
 test("lista paginada y detalle usan las rutas y nombres reales del backend", async (context) => {
-  const list: SourceList = { items: [{ ...source, dataset_count: 3 }], total: 41, page: 2, page_size: 20 };
+  const list: SourceList = { items: [listItem], total: 41, page: 2, page_size: 20 };
   context.mock.method(globalThis, "fetch", async (url: string) => {
     if (url.endsWith("/sources?page=2&page_size=20")) return Response.json(list);
     assert.equal(url, "http://localhost:8000/sources/123");
@@ -91,12 +93,27 @@ test("errores HTTP legibles, validación de FastAPI y cancelación de solicitude
   assert.match(errorMessage(new TypeError("Failed to fetch")), /conectarnos con el servicio de fuentes/);
 });
 
-test("solo admite CSV y XLSX con contenido y dentro del límite configurado", () => {
+test("admite planillas y documentos con contenido, cada uno con su límite configurado", () => {
   assert.equal(validateSourceFile({ name: "datos.CSV", size: MAX_UPLOAD_BYTES }), null);
   assert.equal(validateSourceFile({ name: "datos.xlsx", size: 100 }), null);
-  assert.match(validateSourceFile({ name: "datos.pdf", size: 100 })!, /PDF/);
+  assert.equal(validateSourceFile({ name: "paper.pdf", size: MAX_DOCUMENT_UPLOAD_BYTES }), null);
+  assert.equal(validateSourceFile({ name: "PAPER.PDF", size: 100 }), null);
+  assert.equal(validateSourceFile({ name: "tabla.docx", size: 100 }), null);
+  assert.match(validateSourceFile({ name: "datos.txt", size: 100 })!, /CSV, XLSX, PDF o DOCX/);
+  assert.match(validateSourceFile({ name: "viejo.doc", size: 100 })!, /CSV, XLSX, PDF o DOCX/);
   assert.match(validateSourceFile({ name: "datos.csv", size: 0 })!, /vacío/);
+  assert.match(validateSourceFile({ name: "paper.pdf", size: 0 })!, /vacío/);
   assert.match(validateSourceFile({ name: "datos.xlsx", size: MAX_UPLOAD_BYTES + 1 })!, /límite/);
+  assert.match(validateSourceFile({ name: "paper.pdf", size: MAX_DOCUMENT_UPLOAD_BYTES + 1 })!, /límite/);
+});
+
+test("distingue documentos de planillas y nombra el idioma detectado", () => {
+  assert.equal(isDocumentType("pdf"), true);
+  assert.equal(isDocumentType("docx"), true);
+  assert.equal(isDocumentType("csv"), false);
+  assert.equal(documentLanguage("es"), "Español");
+  assert.equal(documentLanguage(null), "Sin determinar");
+  assert.equal(documentLanguage("fr"), "Sin determinar");
 });
 
 test("el sondeo distingue preparación, índice y fallos terminales sin perder advertencias", () => {
@@ -107,6 +124,7 @@ test("el sondeo distingue preparación, índice y fallos terminales sin perder a
   assert.equal(needsSourcePolling({ ...source, semantic_index_status: "failed" }), false);
   assert.equal(needsSourcePolling({ ...source, processing_status: "failed", semantic_index_status: "pending" }), false);
   assert.equal(needsSourcePolling(source), false);
-  assert.equal(needsListPolling({ items: [{ ...source, dataset_count: 2, semantic_index_status: "pending" }], total: 1, page: 1, page_size: 20 }), true);
-  assert.deepEqual(sourceErrors({ ...source, processing_report: { errors: [{ code: "no_reliable_tables", message: "Sin tablas confiables" }], semantic_index_error: "Qdrant no disponible" } }), ["Sin tablas confiables"]);
+  assert.equal(needsListPolling({ items: [{ ...listItem, semantic_index_status: "pending" }], total: 1, page: 1, page_size: 20 }), true);
+  const report = { errors: [{ code: "no_reliable_tables", message: "Sin tablas confiables" }, { message: "Docling no pudo convertir el documento." }], semantic_index_error: "Qdrant no disponible" };
+  assert.deepEqual(sourceErrors({ ...source, processing_report: report }), ["No se encontraron tablas confiables, por lo que se conserva el archivo original.", "Docling no pudo convertir el documento."]);
 });

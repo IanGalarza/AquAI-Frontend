@@ -84,6 +84,22 @@ export type DatasetDetail = {
 };
 
 //
+// Resumen del contenido extraído de un documento PDF o DOCX.
+//
+export type DocumentSummary = {
+  id: string;
+  title: string | null;
+  language: string | null;
+  page_count: number | null;
+  duplicate_of_source_id: string | null;
+  section_count: number;
+  chunk_count: number;
+  table_count: number;
+  figure_count: number;
+  index_error?: string | null;
+};
+
+//
 // Detalle de una fuente con su informe de procesamiento y conjuntos de datos.
 //
 export type SourceDetail = SourceState & {
@@ -100,4 +116,5 @@ export type SourceDetail = SourceState & {
   };
   datasets: DatasetDetail[];
   queryable: boolean;
+  document?: DocumentSummary | null;
 };

@@ -2,7 +2,7 @@
 
 import { useId, useState, type ComponentProps, type ReactNode } from "react";
 import type { ColumnMetadata, DatasetDetail, SourceDetail as SourceDetailData } from "@/types/sources";
-import { formatDate, formatSourceMessage, isPrepared, sourceErrors } from "@/utils/sources";
+import { documentLanguage, formatDate, formatSourceMessage, isDocumentType, isPrepared, sourceErrors } from "@/utils/sources";
 import { useTooltip } from "@/hooks/use-tooltip";
 import { ChatIcon } from "../chat/chat-icon";
 import { ProcessingBadge, SemanticBadge, SourceToggle } from "./source-status";
@@ -150,7 +150,31 @@ function DatasetCard({ dataset }: { dataset: DatasetDetail }) {
 }
 
 //
-// Muestra el detalle de una fuente: estado, fechas, avisos y conjuntos de datos.
+// Muestra el contenido extraído de un documento o el motivo por el que todavía no está.
+//
+function DocumentContent({ source, failed }: { source: SourceDetailData; failed: boolean }) {
+  const { document } = source;
+  return (
+    <section aria-labelledby="document-title" className="min-w-0">
+      <h2 id="document-title" className="mb-3 flex items-center gap-2 text-sm font-semibold"><ChatIcon name="description" className="size-4 text-foreground-secondary" />Contenido del documento</h2>
+      {!document ? <div className="flex items-center gap-3 rounded-md bg-surface/60 p-5 text-xs text-foreground-secondary"><ChatIcon name="description" className="size-6 shrink-0 opacity-60" /><p>{failed ? "No se pudo extraer el contenido de este documento." : "El contenido va a aparecer cuando termine la preparación."}</p></div> : <article className="min-w-0 rounded-md bg-surface/80 p-4 border border-border/70 sm:p-5">
+        {document.title && <p className="mb-4 break-words text-sm font-semibold leading-snug [overflow-wrap:anywhere]">{document.title}</p>}
+        {document.duplicate_of_source_id ? <p className="flex items-start gap-2 rounded-sm bg-warning/5 px-3.5 py-3 text-xs leading-relaxed"><ChatIcon name="alert-triangle" className="mt-0.5 size-4 shrink-0 text-warning" />Su texto coincide con el de otra fuente cargada, por lo que no se indexó de nuevo.</p> : <dl className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3">
+          <Information label="Páginas" icon="description">{document.page_count?.toLocaleString("es-AR") ?? "No aplica"}</Information>
+          <Information label="Idioma" icon="message">{documentLanguage(document.language)}</Information>
+          <Information label="Secciones" icon="rows">{document.section_count.toLocaleString("es-AR")}</Information>
+          <Information label="Fragmentos" icon="search">{document.chunk_count.toLocaleString("es-AR")}</Information>
+          <Information label="Tablas" icon="table">{document.table_count.toLocaleString("es-AR")}</Information>
+          <Information label="Figuras" icon="eye">{document.figure_count.toLocaleString("es-AR")}</Information>
+        </dl>}
+        {document.index_error && <p className="mt-4 break-words text-xs leading-relaxed text-foreground-secondary">{document.index_error}</p>}
+      </article>}
+    </section>
+  );
+}
+
+//
+// Muestra el detalle de una fuente: estado, fechas, avisos y su contenido.
 //
 export function SourceDetail({ source, toggling, onToggle }: {
   source: SourceDetailData; toggling: boolean; onToggle: () => void;
@@ -159,13 +183,16 @@ export function SourceDetail({ source, toggling, onToggle }: {
   const warnings = source.processing_report.warnings || [];
   const errors = sourceErrors(source);
   const failed = source.processing_status === "failed";
+  const isDocument = isDocumentType(source.file_type);
   const attention = source.processing_status === "ready_with_warnings" || source.semantic_index_status === "failed";
   const statusMessage = source.processing_status === "uploaded" ? "Archivo recibido. Su preparación va a empezar en unos instantes."
     : source.processing_status === "processing" ? "Estamos preparando el archivo. Esta vista se actualiza sola."
     : failed ? "No pudimos preparar el archivo."
-    : !source.isActive ? "El archivo está preparado. Activá la fuente para consultarlo."
+    : !source.isActive ? isDocument ? "El documento está preparado y desactivado." : "El archivo está preparado. Activá la fuente para consultarlo."
     : source.queryable ? "El archivo está listo para tus consultas."
     : source.semantic_index_status === "failed" ? "El archivo está preparado."
+    : source.document?.duplicate_of_source_id ? "Este documento repite el texto de otra fuente ya indexada."
+    : isDocument && source.semantic_index_status === "ready" ? "El documento está indexado. Todavía no se puede consultar desde el chat."
     : "El archivo está preparado. Estamos habilitando la búsqueda.";
   return (
     <div className="space-y-5">
@@ -180,7 +207,7 @@ export function SourceDetail({ source, toggling, onToggle }: {
           <Information label="Cargado" icon="calendar"><time dateTime={source.created_at}>{formatDate(source.created_at)}</time></Information>
           <Information label="Preparación" icon="refresh"><ProcessingBadge status={source.processing_status} compact /></Information>
           <Information label="Búsqueda" icon="search"><SemanticBadge status={source.semantic_index_status} active={source.isActive} compact /></Information>
-          <Information label="Consultas" icon="message">{source.queryable ? "Disponible" : "No disponible"}</Information>
+          <Information label="Consultas" icon="message">{source.queryable ? "Disponible" : isDocument ? "Todavía no en el chat" : "No disponible"}</Information>
         </dl>
         {source.description && <p className="mt-4 break-words text-xs leading-relaxed text-foreground-secondary">{formatSourceMessage(source.description)}</p>}
         {failed && <p className="mt-3 text-[11px] text-foreground-secondary">Activar la fuente no vuelve a preparar el archivo.</p>}
@@ -191,10 +218,10 @@ export function SourceDetail({ source, toggling, onToggle }: {
           {source.semantic_index_status === "failed" && <div className="rounded-sm bg-warning/5 px-3.5 py-3"><p className="flex items-center gap-2 text-xs font-medium"><ChatIcon name="alert-triangle" className="size-4 shrink-0 text-warning" />Búsqueda no disponible</p><p className="mt-2 text-xs leading-relaxed text-foreground-secondary">{prepared ? "No pudimos habilitar la búsqueda. Los datos preparados siguen guardados." : "No pudimos habilitar la búsqueda. Intentá actualizar en unos instantes."}</p></div>}
         </div>
       </section>
-      <section aria-labelledby="datasets-title" className="min-w-0">
+      {isDocument ? <DocumentContent source={source} failed={failed} /> : <section aria-labelledby="datasets-title" className="min-w-0">
         <h2 id="datasets-title" className="mb-3 flex items-center gap-2 text-sm font-semibold"><ChatIcon name="table" className="size-4 text-foreground-secondary" />Tablas detectadas <span className="font-normal text-foreground-secondary">({source.datasets.length})</span></h2>
         {source.datasets.length === 0 ? <div className="flex items-center gap-3 rounded-md bg-surface/60 p-5 text-xs text-foreground-secondary"><ChatIcon name="table" className="size-6 shrink-0 opacity-60" /><p>{failed ? "No se encontraron tablas en este archivo." : "Las tablas van a aparecer cuando termine la preparación."}</p></div> : <div className="space-y-3">{source.datasets.map((dataset) => <DatasetCard key={dataset.id} dataset={dataset} />)}</div>}
-      </section>
+      </section>}
     </div>
   );
 }
