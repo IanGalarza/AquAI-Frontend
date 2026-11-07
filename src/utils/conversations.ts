@@ -3,18 +3,6 @@ import { ApiError } from "@/services/api";
 import { formatScientificNumber } from "@/utils/scientific";
 
 //
-// Indica si un valor tiene la forma de un mensaje del backend.
-//
-export function isMessage(value: unknown): value is Message {
-  if (!value || typeof value !== "object") return false;
-  const item = value as Partial<Message>;
-  return typeof item.id === "string" && typeof item.conversation_id === "string" &&
-    typeof item.sequence_number === "number" && typeof item.role === "string" &&
-    typeof item.content === "string" && !!item.content_data && typeof item.content_data === "object" &&
-    typeof item.status?.name === "string" && Array.isArray(item.sources);
-}
-
-//
 // Devuelve la instantánea estructurada de un mensaje del asistente, o null si no es válida.
 //
 export function assistantSnapshot(message: Message): AssistantSnapshot | null {
@@ -40,12 +28,20 @@ export function generationActive(message: ChatMessage): boolean {
 }
 
 //
-// Indica si venció el plazo de una generación aún pendiente.
+// Indica si el backend registró la respuesta como interrumpida, por ejemplo por un reinicio del servidor.
+//
+export function interruptionRecorded(message: ChatMessage): boolean {
+  if ("optimistic" in message || message.status.name !== "failed") return false;
+  const error = message.content_data.error;
+  return !!error && typeof error === "object" && !Array.isArray(error) && error.code === "interrupted_generation";
+}
+
+//
+// Indica si una generación aún pendiente tenía la reserva vencida cuando el servidor la leyó: el servidor
+// lo decide con su propio reloj, así que una copia local vieja o un reloj desfasado no la dan por muerta.
 //
 export function generationLeaseExpired(message: ChatMessage): boolean {
-  if (!generationActive(message) || "optimistic" in message) return false;
-  const lease = message.content_data.lease_expires_at;
-  return typeof lease === "string" && Number.isFinite(Date.parse(lease)) && Date.parse(lease) < Date.now();
+  return generationActive(message) && !("optimistic" in message) && message.lease_expired === true;
 }
 
 //
@@ -58,7 +54,7 @@ export function mergeMessages(current: ChatMessage[], incoming: Message[], pendi
     const previous = messages.get(item.id);
     if (previous && !("optimistic" in previous)) {
       const difference = Date.parse(previous.updated_at ?? previous.created_at) - Date.parse(item.updated_at ?? item.created_at);
-      const unchanged = difference === 0 && previous.status.name === item.status.name;
+      const unchanged = difference === 0 && previous.status.name === item.status.name && previous.lease_expired === item.lease_expired;
       if (difference > 0 || unchanged || (!generationActive(previous) && generationActive(item))) continue;
     }
     messages.set(item.id, item);
@@ -90,7 +86,7 @@ export function mergeConversations(current: Conversation[], incoming: Conversati
 //
 export function conversationError(error: unknown): string {
   if (error instanceof ApiError) return error.message;
-  if (error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) {
+  if (error instanceof Error && ["AbortError", "TimeoutError", "StreamInterruptedError"].includes(error.name)) {
     return "La espera se interrumpió. Vamos a consultar el historial antes de habilitar otro envío; la pregunta no se reenviará automáticamente.";
   }
   return "No pudimos comunicarnos con el servicio de conversaciones. Comprobá el estado antes de volver a enviar.";

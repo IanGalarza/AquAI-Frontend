@@ -124,6 +124,7 @@ export type Message = {
   updated_at: string | null;
   sources: MessageSource[];
   presentation?: MessagePresentation | null;
+  lease_expired?: boolean;
 };
 
 //
@@ -136,6 +137,40 @@ export type MessagePage = { conversation_id: string; items: Message[]; total: nu
 //
 export type OptimisticMessage = { id: string; role: "user"; content: string; optimistic: true };
 export type ChatMessage = Message | OptimisticMessage;
+
+//
+// Etapa real del análisis que el backend informa mientras responde un turno.
+//
+export type TurnStage = "interpreting" | "retrieving" | "referencing" | "planning" | "analyzing" | "validating" | "documents" | "writing";
+
+//
+// Evento inicial de un turno transmitido: mensajes reservados y momento en que empezó.
+//
+export type TurnStartedEvent = { conversation_id: string; user_message_id: string; assistant_message_id: string; started_at: string };
+
+//
+// Evento de una etapa del análisis que comienza, con el tiempo transcurrido desde el inicio del turno.
+//
+export type TurnStageEvent = { stage: TurnStage; elapsed_ms: number };
+
+//
+// Evento final de un turno: su resultado y el mensaje guardado del asistente, salvo si se canceló.
+//
+export type TurnDoneEvent = {
+  outcome: "completed" | "generation_failed" | "execution_failed" | "timed_out" | "cancelled";
+  message: Message | null;
+};
+
+//
+// Evento de un turno que no pudo cerrarse, con el código HTTP equivalente y su detalle.
+//
+export type TurnErrorEvent = { status: number; detail: string };
+
+//
+// Turno que se sigue en vivo: quién lo sigue, su mensaje, las etapas recibidas, si se pidió cancelarlo
+// y si se retomó una respuesta que ya estaba en curso.
+//
+export type LiveTurn = { owner: string; messageId: string | null; stages: TurnStage[]; startedAt: number; cancelling: boolean; resumed?: boolean };
 
 //
 // Referencia a una columna de un conjunto de datos.

@@ -10,6 +10,11 @@ Copiar `.env.example` a `.env.local` y ajustar:
 - `NEXT_PUBLIC_BACKEND_URL`: URL de FastAPI, sin prefijo `/api` ni `/v1` (por defecto `http://localhost:8000`).
 - `NEXT_PUBLIC_MAX_UPLOAD_BYTES`: mismo límite que `TABULAR_MAX_UPLOAD_BYTES` en el backend (por defecto 10485760 bytes, 10 MiB).
 
+El chat envía las preguntas por `POST /conversations/{id}/messages/stream` (SSE):
+muestra las etapas reales que informa el backend y, al llegar la respuesta validada,
+la escribe progresivamente sin cambiar su contenido. Si se recarga la página durante
+una respuesta, vuelve a seguirla con `GET .../messages/{message_id}/events`.
+
 Iniciar el backend con PostgreSQL, Qdrant y Ollama siguiendo su README y ejecutar
 `pnpm dev`. Abrir `http://localhost:3000` y entrar a **Administrar fuentes** desde
 la barra lateral o el menú móvil. FastAPI permite los orígenes locales

@@ -1,15 +1,23 @@
-import type { ChatMessage, Message } from "@/types/conversations";
-import { assistantSnapshot, formatDuration, generationActive, generationLeaseExpired } from "@/utils/conversations";
+import { useState } from "react";
+import type { ChatMessage, LiveTurn, Message } from "@/types/conversations";
+import { assistantSnapshot, formatDuration, generationActive, generationLeaseExpired, interruptionRecorded } from "@/utils/conversations";
 import { AquaiAvatar } from "./aquai-brand";
 import { ChatResponse } from "./chat-response";
 import { ChatIcon } from "./chat-icon";
+import { TurnProgress } from "./turn-progress";
 
 const GENERATING = "Analizando los datos… La consulta puede tardar varios minutos.";
+const CHECKING = "Comprobando si la consulta sigue en curso en el servidor…";
+const INTERRUPTED = "La consulta se interrumpió antes de terminar, por ejemplo porque el servidor se reinició. La pregunta quedó guardada y podés volver a enviarla.";
 
 type ChatMessagesProps = {
   messages: ChatMessage[];
   processing: boolean;
   checking: boolean;
+  liveTurn: LiveTurn | null;
+  revealing: Record<string, number>;
+  onRevealed: (messageId: string) => void;
+  detached: Record<string, true>;
 };
 
 //
@@ -25,12 +33,13 @@ function GenerationStatus({ children }: { children: string }) {
 //
 // Muestra la cabecera de un mensaje del asistente con duración y etiquetas de estado.
 //
-function AssistantHeader({ message }: { message?: Message }) {
+function AssistantHeader({ message, interrupted = false }: { message?: Message; interrupted?: boolean }) {
   const snapshot = message && assistantSnapshot(message);
   const milliseconds = message?.presentation?.duration_ms;
   const duration = milliseconds == null ? null : formatDuration(milliseconds);
-  const failed = message && (["failed", "cancelled"].includes(message.status.name) || snapshot?.response.status === "failed");
+  const failed = interrupted || (message && (["failed", "cancelled"].includes(message.status.name) || snapshot?.response.status === "failed"));
   const partial = snapshot?.response.status === "partial";
+  const failure = interrupted ? "Interrumpida" : message?.status.name === "cancelled" ? "Cancelada" : "No completada";
   return <div className="mb-2 flex flex-wrap items-center gap-x-2.5 gap-y-1">
     <AquaiAvatar />
     <span className="text-sm font-semibold">AquAI</span>
@@ -38,7 +47,7 @@ function AssistantHeader({ message }: { message?: Message }) {
       <ChatIcon name="clock" className="size-3.5" /><span className="sr-only">Tiempo de respuesta: </span>{duration}
     </span>}
     {failed && <span className="inline-flex items-center gap-1 rounded-full border border-error/35 px-2 py-0.5 text-[11px] font-medium text-error">
-      <ChatIcon name="alert-circle" className="size-3.5" />{message.status.name === "cancelled" ? "Cancelada" : "No completada"}
+      <ChatIcon name="alert-circle" className="size-3.5" />{failure}
     </span>}
     {partial && <span className="inline-flex items-center gap-1 rounded-full border border-warning/35 px-2 py-0.5 text-[11px] font-medium text-warning">
       <ChatIcon name="alert-triangle" className="size-3.5" />Respuesta parcial
@@ -47,14 +56,24 @@ function AssistantHeader({ message }: { message?: Message }) {
 }
 
 //
-// Muestra el cuerpo de una respuesta: estado de generación, respuesta estructurada o texto plano.
+// Muestra el cuerpo de una respuesta: etapas en vivo o estado de generación, aviso de interrupción,
+// respuesta estructurada (escrita progresivamente si acaba de llegar) o texto plano.
 //
-function AssistantBody({ message }: { message: Message }) {
+function AssistantBody({ message, liveTurn, stale, detached, stagesOpen, onToggleStages, revealStartedAt, onRevealed }: {
+  message: Message; liveTurn: LiveTurn | null; stale: boolean; detached: boolean; stagesOpen: boolean; onToggleStages: () => void;
+  revealStartedAt?: number; onRevealed: (messageId: string) => void;
+}) {
   if (generationActive(message)) {
-    return <GenerationStatus>{generationLeaseExpired(message) ? "La generación sigue pendiente en el servidor. Comprobá el estado antes de continuar." : GENERATING}</GenerationStatus>;
+    if (liveTurn && !stale && (liveTurn.messageId ?? message.id) === message.id) {
+      return <TurnProgress turn={liveTurn} open={stagesOpen} onToggle={onToggleStages} />;
+    }
+    if (stale) return <p className="text-[15px] leading-7 [overflow-wrap:anywhere]">{INTERRUPTED}</p>;
+    return <GenerationStatus>{detached ? CHECKING : GENERATING}</GenerationStatus>;
   }
   const snapshot = assistantSnapshot(message);
-  if (snapshot && message.presentation) return <ChatResponse snapshot={snapshot} presentation={message.presentation} />;
+  if (snapshot && message.presentation) {
+    return <ChatResponse snapshot={snapshot} presentation={message.presentation} revealStartedAt={revealStartedAt} onRevealed={() => onRevealed(message.id)} />;
+  }
   return <>
     <p className="whitespace-pre-line text-[15px] leading-7 [overflow-wrap:anywhere]">{message.content}</p>
     {message.content_data.kind === "assistant_response" && !snapshot && <p className="mt-3 text-xs text-foreground-secondary">Esta respuesta tiene un formato anterior; se muestra su texto original.</p>}
@@ -64,8 +83,12 @@ function AssistantBody({ message }: { message: Message }) {
 //
 // Muestra la lista de mensajes de la conversación y el estado de procesamiento.
 //
-export function ChatMessages({ messages, processing, checking }: ChatMessagesProps) {
-  const hasActive = messages.some(generationActive);
+export function ChatMessages({ messages, processing, checking, liveTurn, revealing, onRevealed, detached }: ChatMessagesProps) {
+  const [openStages, setOpenStages] = useState<string | null>(null);
+  const stale = (message: ChatMessage) => generationLeaseExpired(message) && liveTurn?.messageId !== message.id;
+  const hasActive = messages.some((message) => generationActive(message) && !stale(message));
+  const stagesOpen = !!liveTurn && openStages === liveTurn.owner;
+  const toggleStages = () => setOpenStages(stagesOpen ? null : liveTurn?.owner ?? null);
   return (
     <section
       role="log"
@@ -86,17 +109,21 @@ export function ChatMessages({ messages, processing, checking }: ChatMessagesPro
             </li>;
           }
           if ("optimistic" in message) return null;
-          return <li key={message.id} data-assistant-message className="min-w-0" data-generation-status={message.status.name}>
-            <AssistantHeader message={message} />
+          const revealStartedAt = revealing[message.id];
+          const interrupted = stale(message);
+          return <li key={message.id} data-assistant-message className="min-w-0" data-generation-status={interrupted ? "interrupted" : message.status.name}>
+            <AssistantHeader message={message} interrupted={interrupted || interruptionRecorded(message)} />
             <div className="min-w-0 rounded-xl border border-border/60 bg-surface/95 px-4 py-4 text-foreground sm:px-5 sm:py-5">
-              <AssistantBody message={message} />
+              <AssistantBody message={message} liveTurn={liveTurn} stale={interrupted} detached={!!detached[message.id]}
+                stagesOpen={stagesOpen} onToggleStages={toggleStages} revealStartedAt={revealStartedAt} onRevealed={onRevealed} />
             </div>
           </li>;
         })}
         {(processing || checking) && !hasActive && <li className="min-w-0">
           <AssistantHeader />
-          <div className="rounded-xl border border-border/60 bg-surface/95 px-4 py-4 sm:px-5">
-            <GenerationStatus>{checking ? "Comprobando el estado guardado; la pregunta no se reenviará automáticamente." : GENERATING}</GenerationStatus>
+          <div className="rounded-xl border border-border/60 bg-surface/95 px-4 py-4 sm:px-5 sm:py-5">
+            {checking ? <GenerationStatus>Comprobando el estado guardado; la pregunta no se reenviará automáticamente.</GenerationStatus> :
+              <TurnProgress turn={liveTurn} open={stagesOpen} onToggle={toggleStages} />}
           </div>
         </li>}
       </ol>

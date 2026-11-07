@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as api from "@/services/backend/conversations";
 import { ApiError } from "@/services/api";
-import type { ChatMessage, Conversation, Message } from "@/types/conversations";
-import { conversationError, generationActive, generationLeaseExpired, isMessage, mergeConversations, mergeMessages } from "@/utils/conversations";
+import type { ChatMessage, Conversation, LiveTurn, Message, TurnDoneEvent } from "@/types/conversations";
+import { assistantSnapshot, conversationError, generationActive, generationLeaseExpired, mergeConversations, mergeMessages } from "@/utils/conversations";
 
 const NEW = "new";
 const PAGE_SIZE = 20;
@@ -48,6 +48,12 @@ export function useConversations() {
   const pagesRef = useRef(0);
   const listController = useRef<AbortController | null>(null);
   const [olderError, setOlderError] = useState<string | null>(null);
+  const [live, setLive] = useState<Record<string, LiveTurn>>({});
+  const liveRef = useRef<Record<string, LiveTurn>>({});
+  const [revealing, setRevealing] = useState<Record<string, number>>({});
+  const [reattach, setReattach] = useState(0);
+  const unfollowable = useRef(new Map<string, string | null>());
+  const [detached, setDetached] = useState<Record<string, true>>({});
 
   const updateThread = useCallback((id: string, update: (thread: Thread) => Thread) => {
     setThreads((current) => ({ ...current, [id]: update(current[id] ?? emptyThread()) }));
@@ -59,6 +65,19 @@ export function useConversations() {
     pendingRef.current = next;
     setPending(next);
   }, []);
+  const writeLive = useCallback((id: string, value: LiveTurn | null) => {
+    const next = { ...liveRef.current };
+    if (value) next[id] = value;
+    else delete next[id];
+    liveRef.current = next;
+    setLive(next);
+  }, []);
+  const changeLive = useCallback((id: string, owner: string, change: ((turn: LiveTurn) => LiveTurn) | null) => {
+    const current = liveRef.current[id];
+    if (current?.owner === owner) writeLive(id, change && change(current));
+  }, [writeLive]);
+  const unfollowableNow = useCallback((message: Message) =>
+    unfollowable.current.has(message.id) && unfollowable.current.get(message.id) === (message.updated_at ?? null), []);
   const navigate = useCallback((id: string | null) => {
     setSelectedId(id);
     setOlderError(null);
@@ -117,6 +136,36 @@ export function useConversations() {
       notice: "Se comprobó el historial. No hay una generación activa; no se reenvió la pregunta." }));
   }, [updatePending, updateThread]);
 
+  const turnListeners = useCallback((id: string, owner: string, sending: boolean): api.TurnListeners => ({
+    started: (event) => {
+      changeLive(id, owner, (turn) => ({ ...turn, messageId: event.assistant_message_id, startedAt: Date.parse(event.started_at) }));
+      if (!sending) return;
+      void refreshThread(id).catch(() => undefined);
+      void refreshList();
+    },
+    stage: (event) => changeLive(id, owner, (turn) => ({ ...turn, stages: [...turn.stages, event.stage] })),
+  }), [changeLive, refreshThread, refreshList]);
+
+  const showDone = useCallback((id: string, done: TurnDoneEvent) => {
+    const { message, outcome } = done;
+    const notice = api.outcomeNotice(outcome);
+    const structured = message && outcome === "completed" && message.presentation && assistantSnapshot(message);
+    if (structured) {
+      const startedAt = performance.now();
+      setRevealing((current) => ({ ...current, [message.id]: startedAt }));
+    }
+    updateThread(id, (current) => ({ ...current, notice: notice ?? current.notice,
+      messages: message ? mergeMessages(current.messages, [message]) : current.messages }));
+  }, [updateThread]);
+
+  const finishReveal = useCallback((id: string) => {
+    setRevealing((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     function readSelection() {
       if (window.location.pathname !== "/") return;
@@ -152,10 +201,13 @@ export function useConversations() {
   const thread = threads[key] ?? emptyThread();
   const conversation = thread.conversation ?? conversations.find((item) => item.id === selectedId) ?? null;
   const opening = !!selectedId && !thread.conversation && !thread.error;
-  const activeMessage = thread.messages.find((message) => generationActive(message) && !generationLeaseExpired(message));
+  const liveTurn = live[key] ?? null;
+  const activeMessage = thread.messages.find((message): message is Message => generationActive(message) &&
+    (message.id === liveTurn?.messageId || !generationLeaseExpired(message)));
   const isSending = !!pending[key];
   const checking = pending[key]?.phase === "checking";
-  const shouldPoll = !!selectedId && (isSending || !!activeMessage);
+  const shouldPoll = !!selectedId && !liveTurn && (isSending || thread.messages.some(generationActive));
+  const pollEvery = isSending || activeMessage ? 5_000 : 30_000;
 
   useEffect(() => {
     if (!selectedId || !shouldPoll) return;
@@ -189,13 +241,15 @@ export function useConversations() {
           if (stopped) return;
           finishCheck(selectedId!, latest, turn);
           void refreshList();
-        } else if (!waiting && !turn) {
+        } else if (!waiting && !turn && !page.items.some(generationActive)) {
           await refreshThread(selectedId!, controller.signal);
           void refreshList();
         } else {
           updateThread(selectedId!, (current) => ({ ...current, total: page.total, conversation: conversation ?? current.conversation,
             messages: mergeMessages(current.messages, incoming, turn), error: null }));
           if (conversation) setConversations((current) => mergeConversations(current, [conversation!]));
+          const followable = page.items.some((message) => generationActive(message) && !generationLeaseExpired(message) && !unfollowableNow(message));
+          if (followable) setReattach((count) => count + 1);
         }
       } catch (error) {
         if (stopped) return;
@@ -203,11 +257,52 @@ export function useConversations() {
         updateThread(selectedId!, (current) => ({ ...current, error: conversationError(error) }));
         if (error instanceof ApiError && [404, 422].includes(error.status)) return;
       }
-      if (!stopped) timer = setTimeout(() => void poll(), Math.min(5_000 * 2 ** Math.min(failures, 3), 30_000));
+      if (!stopped) timer = setTimeout(() => void poll(), Math.min(pollEvery * 2 ** Math.min(failures, 3), 30_000));
     }
     timer = setTimeout(() => void poll(), 1500);
     return () => { stopped = true; clearTimeout(timer); controller.abort(); };
-  }, [selectedId, shouldPoll, thread.total, refreshList, refreshThread, finishCheck, updateThread]);
+  }, [selectedId, shouldPoll, pollEvery, thread.total, refreshList, refreshThread, finishCheck, updateThread, unfollowableNow]);
+
+  const activeId = activeMessage?.id;
+  const activeCreatedAt = activeMessage?.created_at;
+  const activeUpdatedAt = activeMessage?.updated_at ?? null;
+  useEffect(() => {
+    if (!selectedId || !activeId || !activeCreatedAt || liveRef.current[selectedId]) return;
+    if (unfollowable.current.has(activeId) && unfollowable.current.get(activeId) === activeUpdatedAt) return;
+    const target = selectedId;
+    const messageId = activeId;
+    const renewedAt = activeUpdatedAt;
+    const owner = `follow-${crypto.randomUUID()}`;
+    const controller = new AbortController();
+    writeLive(target, { owner, messageId, stages: [], startedAt: Date.parse(activeCreatedAt), cancelling: false, resumed: true });
+    async function follow() {
+      try {
+        const done = await api.followGeneration(target, messageId, turnListeners(target, owner, false), controller.signal);
+        const turn = pendingRef.current[target];
+        if (turn) {
+          updatePending(target, null);
+          updateThread(target, (current) => ({ ...current, notice: null,
+            messages: current.messages.filter((message) => message.id !== turn.optimisticId) }));
+        }
+        showDone(target, done);
+        if (done.message) changeLive(target, owner, null);
+        await refreshThread(target);
+        void refreshList();
+      } catch (error) {
+        if (!controller.signal.aborted && error instanceof ApiError && error.status === 404) {
+          unfollowable.current.set(messageId, renewedAt);
+          setDetached((current) => ({ ...current, [messageId]: true }));
+        }
+      } finally {
+        changeLive(target, owner, null);
+      }
+    }
+    void follow();
+    return () => {
+      controller.abort();
+      changeLive(target, owner, null);
+    };
+  }, [selectedId, activeId, activeCreatedAt, activeUpdatedAt, reattach, writeLive, changeLive, turnListeners, showDone, updatePending, updateThread, refreshThread, refreshList]);
 
   const newConversation = () => {
     updateThread(NEW, (current) => ({ ...current, notice: null }));
@@ -262,17 +357,18 @@ export function useConversations() {
         }
       }
       const target = id;
+      const owner = `send-${optimisticId}`;
       sendGuard.current.add(target);
       updatePending(target, turn);
+      writeLive(target, { owner, messageId: null, stages: [], startedAt: Date.now(), cancelling: false });
       try {
-        const assistant = await api.sendMessage(target, content);
-        updateThread(target, (current) => ({ ...current, messages: mergeMessages(current.messages, [assistant]) }));
+        const done = await api.streamMessage(target, content, turnListeners(target, owner, true));
+        showDone(target, done);
+        if (done.message) changeLive(target, owner, null);
         await refreshThread(target);
         updatePending(target, null);
       } catch (error) {
-        const stored = error instanceof ApiError && isMessage(error.body) && error.body.conversation_id === target ? error.body : null;
-        if (stored) updateThread(target, (current) => ({ ...current, messages: mergeMessages(current.messages, [stored]) }));
-        const rejected = error instanceof ApiError && [404, 409, 422].includes(error.status);
+        const rejected = error instanceof ApiError && !(error instanceof api.TurnError) && [404, 409, 422].includes(error.status);
         updatePending(target, { ...turn, phase: "checking" });
         updateThread(target, (current) => ({ ...current, notice: conversationError(error), checked: false,
           messages: rejected ? current.messages.filter((message) => message.id !== optimisticId) : current.messages }));
@@ -281,14 +377,18 @@ export function useConversations() {
           const latest = await refreshThread(target);
           if (!latest?.some((message) => generationActive(message) && !generationLeaseExpired(message))) {
             updatePending(target, null);
-            const accepted = stored || latest?.some((message) => message.role === "user" && message.sequence_number > baseline && message.content === content);
+            const accepted = latest?.some((message) => message.role === "user" && message.sequence_number > baseline && message.content === content);
             updateThread(target, (current) => ({ ...current, messages: current.messages.filter((message) => message.id !== optimisticId),
               notice: `${conversationError(error)}${!accepted && !rejected ? " No se encontró el turno en el historial; podés revisar la pregunta y enviarla manualmente." : ""}` }));
             if (!accepted && !rejected) setDrafts((current) => ({ ...current, [target]: current[target] || content }));
+          } else {
+            setReattach((count) => count + 1);
           }
         } catch (checkError) {
           updateThread(target, (current) => ({ ...current, checked: false, error: conversationError(checkError) }));
         }
+      } finally {
+        changeLive(target, owner, null);
       }
       void refreshList();
     } catch (error) {
@@ -297,6 +397,19 @@ export function useConversations() {
     } finally {
       sendGuard.current.delete(key);
       if (id) sendGuard.current.delete(id);
+    }
+  }
+
+  async function cancel() {
+    const turn = liveRef.current[key];
+    if (!selectedId || !turn?.messageId || turn.cancelling) return;
+    const target = selectedId;
+    changeLive(target, turn.owner, (current) => ({ ...current, cancelling: true }));
+    try {
+      await api.cancelGeneration(target, turn.messageId);
+    } catch (error) {
+      changeLive(target, turn.owner, (current) => ({ ...current, cancelling: false }));
+      updateThread(target, (current) => ({ ...current, notice: conversationError(error) }));
     }
   }
 
@@ -331,8 +444,9 @@ export function useConversations() {
     selectedId, select: navigate, newConversation, renameConversation, deleteConversation, creating, selectionReady,
     conversations, totalConversations, loadedPages, listLoading, listError, refreshList,
     thread, conversation, opening, draft: drafts[key] ?? "", setDraft: (text: string) => setDrafts((current) => ({ ...current, [key]: text })),
-    send, checkState, isSending, checking, processing: !!activeMessage || (isSending && !checking) || creating,
+    send, checkState, isSending, checking, processing: !!activeMessage || (isSending && !checking && !!liveTurn) || creating,
     sendDisabled: !selectionReady || creating || isSending || !!activeMessage || !!(selectedId && (!thread.checked || thread.loading || thread.error)),
+    liveTurn, cancel, canCancel: !!liveTurn?.messageId && !liveTurn.cancelling, revealing, finishReveal, detached,
     loadOlder, olderError,
   };
 }

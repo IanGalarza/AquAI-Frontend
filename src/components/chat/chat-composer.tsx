@@ -8,12 +8,16 @@ type ChatComposerProps = {
   inputRef: RefObject<HTMLTextAreaElement | null>;
   disabled?: boolean;
   processing?: boolean;
+  onCancel?: () => void;
+  canCancel?: boolean;
+  cancelling?: boolean;
 };
 
 //
-// Muestra el campo para escribir y enviar una consulta, limitada a 6000 caracteres.
+// Muestra el campo para escribir y enviar una consulta, limitada a 6000 caracteres; mientras se responde
+// una consulta seguida en vivo, el botón permite detenerla.
 //
-export function ChatComposer({ value, onChange, onSend, inputRef, disabled = false, processing = false }: ChatComposerProps) {
+export function ChatComposer({ value, onChange, onSend, inputRef, disabled = false, processing = false, onCancel, canCancel = false, cancelling = false }: ChatComposerProps) {
   const canSend = !disabled && value.trim().length > 0 && value.trim().length <= 6000;
 
   useLayoutEffect(() => {
@@ -54,7 +58,16 @@ export function ChatComposer({ value, onChange, onSend, inputRef, disabled = fal
           placeholder="Escribí tu consulta sobre calidad del agua..."
           className="max-h-36 min-h-11 min-w-0 flex-1 resize-none bg-transparent py-3 text-sm leading-5 text-foreground outline-none placeholder:text-foreground-secondary sm:text-[15px]"
         />
-        <button
+        {processing && onCancel ? <button
+          type="button"
+          onClick={onCancel}
+          disabled={!canCancel}
+          aria-label={cancelling ? "Cancelando la respuesta" : "Detener respuesta"}
+          title={cancelling ? "Cancelando la respuesta" : "Detener respuesta"}
+          className="send-button grid size-11 shrink-0 place-items-center rounded-sm bg-action transition enabled:hover:bg-action-hover enabled:active:scale-95 disabled:cursor-default disabled:opacity-40"
+        >
+          <ChatIcon name="stop" className="size-[22px]" />
+        </button> : <button
           type="submit"
           disabled={!canSend}
           aria-label="Enviar consulta"
@@ -62,7 +75,7 @@ export function ChatComposer({ value, onChange, onSend, inputRef, disabled = fal
           className="send-button grid size-11 shrink-0 place-items-center rounded-sm bg-action transition enabled:hover:bg-action-hover enabled:active:scale-95 disabled:cursor-default disabled:opacity-40"
         >
           <ChatIcon name="send" className="size-[21px]" />
-        </button>
+        </button>}
       </form>
       <p id="chat-context-note" className="mt-2 px-1 text-center text-[10px] leading-relaxed text-foreground-secondary sm:text-[11px]">
         {processing ? "Podés navegar por otras conversaciones mientras se procesa la consulta. " : ""}

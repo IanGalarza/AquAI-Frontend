@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useConversations } from "@/hooks/use-conversations";
+import { useFollowScroll } from "@/hooks/use-follow-scroll";
 import { AquaiShell } from "../aquai-shell";
 import { ChatComposer } from "./chat-composer";
 import { ChatMessages } from "./chat-messages";
@@ -37,6 +38,8 @@ export function Chat() {
     scrollHeight.current = viewport.scrollHeight;
   }, [lastKey, thread.messages, hasMessages, chat.selectedId]);
 
+  useFollowScroll(scrollRef, `${chat.selectedId ?? "new"}:${hasMessages}`);
+
   return <AquaiShell title={chat.conversation?.title ?? (loading ? "" : chat.selectedId ? "Conversación" : "Nueva conversación")}
     onNewConversation={chat.newConversation} subdued={hasMessages || !!(chat.opening && chat.conversation?.last_message_at)}
     onRename={conversationId ? (title) => chat.renameConversation(conversationId, title) : undefined}
@@ -55,7 +58,8 @@ export function Chat() {
         </button>
         {chat.olderError && <p role="alert" className="mt-2 text-xs text-error">{chat.olderError}</p>}
       </div>}
-      {hasMessages ? <ChatMessages messages={thread.messages} processing={chat.processing} checking={chat.checking} /> :
+      {hasMessages ? <ChatMessages messages={thread.messages} processing={chat.processing} checking={chat.checking}
+        liveTurn={chat.liveTurn} revealing={chat.revealing} onRevealed={chat.finishReveal} detached={chat.detached} /> :
         loading ? <p role="status" className="px-4 py-6 text-center text-sm text-foreground-secondary">Cargando conversación…</p> :
         !thread.error && <ChatWelcome onSend={(text) => void chat.send(text)} disabled={chat.sendDisabled} />}
     </div>
@@ -66,6 +70,7 @@ export function Chat() {
       </div>
     </div>}
     <ChatComposer value={chat.draft} onChange={chat.setDraft} onSend={(text) => void chat.send(text)} inputRef={inputRef}
-      disabled={chat.sendDisabled} processing={chat.processing} />
+      disabled={chat.sendDisabled} processing={chat.processing} onCancel={chat.liveTurn ? () => void chat.cancel() : undefined}
+      canCancel={chat.canCancel} cancelling={chat.liveTurn?.cancelling} />
   </AquaiShell>;
 }
