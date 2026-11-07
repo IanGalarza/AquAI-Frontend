@@ -33,7 +33,7 @@ function Segment({ segment, resolve }: { segment: AnswerSegment; resolve: Resolv
       <span className="min-w-0 whitespace-pre-line [overflow-wrap:anywhere]">{segment.text}{chip}</span>
     </p>;
   }
-  return <div>
+  return <div data-segment-role={segment.role ?? undefined} className={segment.role === "hypothesis" ? "border-l-2 border-warning pl-3" : undefined}>
     <p className="whitespace-pre-line text-[15px] leading-7 [overflow-wrap:anywhere]">{segment.text}{chip}</p>
     {segment.items.length > 0 && <ul className="mt-2 list-disc space-y-1.5 pl-5 text-[15px] leading-7 marker:text-foreground-secondary">
       {segment.items.map((item, index) => <li key={index} className="pl-1 [overflow-wrap:anywhere]">{item}</li>)}

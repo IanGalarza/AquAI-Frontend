@@ -44,9 +44,10 @@ export type CitationVariable = { name: string; column: string | null; row: numbe
 //
 export type Citation = {
   id: string;
+  kind: "dataset" | "document";
   source_id: string;
-  dataset_id: string;
-  version: number;
+  dataset_id: string | null;
+  version: number | null;
   file_name: string;
   file_type: string;
   sheet: string | null;
@@ -54,6 +55,11 @@ export type Citation = {
   first_row: number | null;
   last_row: number | null;
   variables: CitationVariable[];
+  title: string | null;
+  pages: string | null;
+  section: string | null;
+  excerpt: string | null;
+  doubtful: boolean;
 };
 
 //
@@ -61,6 +67,7 @@ export type Citation = {
 //
 export type AnswerSegment = {
   kind: "paragraph" | "note";
+  role: "result" | "documented" | "relation" | "hypothesis" | null;
   text: string;
   items: string[];
   citations: string[];
@@ -82,7 +89,12 @@ export type TableView = { evidence_id: string; columns: TableColumnView[]; citat
 //
 // Presentación de un gráfico: citas y títulos de ejes y leyenda.
 //
-export type ChartView = { operation_id: string; citations: string[]; x_title: string | null; y_title: string | null; legend_title: string | null };
+export type ChartView = { operation_id: string; citations: string[]; x_title: string | null; y_title: string | null; legend_title: string | null; reference_lines: ChartReferenceLine[] };
+
+//
+// Línea de referencia documentada de un gráfico, sobre el eje indicado.
+//
+export type ChartReferenceLine = { axis: "x" | "y"; value: number; label: string; citations: string[] };
 
 //
 // Datos de presentación de un mensaje: segmentos, citas, tablas, gráficos y duración.
@@ -254,7 +266,7 @@ export type ExecutionError = { code: string; message: string };
 // Respuesta del asistente guardada, con resultados, fuentes, advertencias y tiempos.
 //
 export type StoredResponse = {
-  response_type?: "analytical" | "general" | "catalog" | "clarification" | "historical";
+  response_type?: "analytical" | "general" | "catalog" | "clarification" | "historical" | "document";
   status: AnswerStatus | "answered";
   validation_status: AnswerStatus | null;
   answer: string;
@@ -285,7 +297,7 @@ export type StoredResponse = {
   planner_output_tokens: number | null;
   historical_message_ids?: string[];
   routing?: {
-    route: "general" | "catalog" | "data" | "historical" | "needs_clarification" | "failed";
+    route: "general" | "catalog" | "data" | "document" | "historical" | "needs_clarification" | "failed";
     context_used: boolean;
     question_contextualized: boolean;
     history_message_ids: string[];

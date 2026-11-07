@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Config, Data, Layout, LayoutAxis } from "plotly.js";
+import type { Annotations, Config, Data, Layout, LayoutAxis, Shape } from "plotly.js";
 import { useTheme } from "@/hooks/use-theme";
-import type { ChartView, JsonValue, PlotlyFigure } from "@/types/conversations";
+import type { ChartReferenceLine, ChartView, JsonValue, PlotlyFigure } from "@/types/conversations";
 
 type PlotlyApi = typeof import("plotly.js");
 type Trace = Data & { type?: string; x?: unknown[]; y?: unknown[]; width?: unknown; marker?: Record<string, unknown>; line?: Record<string, unknown> };
 type Responsive = { bargap?: number; tickvals?: JsonValue[]; ticktext?: JsonValue[] };
-type Labels = Pick<ChartView, "x_title" | "y_title" | "legend_title">;
+type Labels = Pick<ChartView, "x_title" | "y_title" | "legend_title" | "reference_lines">;
 
 const CHART_HEIGHT = 340;
 const PLOT_MARGINS_PX = 96;
@@ -70,6 +70,27 @@ function responsive(figure: PlotlyFigure, width: number): Responsive {
 }
 
 //
+// Devuelve la línea de una referencia documentada, sobre el eje indicado y a todo lo ancho del gráfico.
+//
+function referenceShape(line: ChartReferenceLine, color: string): Partial<Shape> {
+  const dash = { color, width: 1.5, dash: "dash" as const };
+  return line.axis === "y"
+    ? { type: "line", xref: "paper", x0: 0, x1: 1, yref: "y", y0: line.value, y1: line.value, line: dash }
+    : { type: "line", yref: "paper", y0: 0, y1: 1, xref: "x", x0: line.value, x1: line.value, line: dash };
+}
+
+//
+// Devuelve el rótulo de una referencia documentada, junto a su línea.
+//
+function referenceLabel(line: ChartReferenceLine, color: string): Partial<Annotations> {
+  const text = escapeMarkup(line.label);
+  const font = { size: 11, color };
+  return line.axis === "y"
+    ? { text, font, xref: "paper", x: 1, xanchor: "right", yref: "y", y: line.value, yanchor: "bottom", showarrow: false }
+    : { text, font, yref: "paper", y: 1, yanchor: "bottom", xref: "x", x: line.value, xanchor: "left", showarrow: false };
+}
+
+//
 // Adapta una figura de Plotly al tema, la tipografía y los rótulos de la interfaz.
 //
 function themedFigure(figure: PlotlyFigure, element: HTMLElement, theme: "light" | "dark", title: string, labels?: Labels) {
@@ -112,6 +133,9 @@ function themedFigure(figure: PlotlyFigure, element: HTMLElement, theme: "light"
       axis.tickformat = "," + axis.tickformat;
     }
   }
+  const lines = labels?.reference_lines ?? [];
+  layout.shapes = lines.map((line) => referenceShape(line, tokens.getPropertyValue("--warning").trim()));
+  layout.annotations = lines.map((line) => referenceLabel(line, tokens.getPropertyValue("--warning").trim()));
   const sizing = responsive(figure, element.clientWidth);
   if (sizing.bargap !== undefined) layout.bargap = sizing.bargap;
   if (layout.xaxis && sizing.tickvals) Object.assign(layout.xaxis, { tickvals: sizing.tickvals, ticktext: sizing.ticktext });

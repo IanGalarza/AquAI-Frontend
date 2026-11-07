@@ -12,10 +12,17 @@ import { ChatIcon } from "./chat-icon";
 const noSubscription = () => () => {};
 
 //
-// Devuelve el nombre del archivo de una cita sin su extensión de planilla.
+// Devuelve el nombre del archivo de una cita sin su extensión.
+//
+function fileStem(citation: Citation): string {
+  return citation.file_name.replace(/\.(xlsx|xlsm|xls|csv|pdf|docx)$/i, "");
+}
+
+//
+// Devuelve el nombre de una cita, con las páginas si es un documento.
 //
 function shortName(citation: Citation): string {
-  return citation.file_name.replace(/\.(xlsx|xlsm|xls|csv)$/i, "");
+  return citation.pages ? `${fileStem(citation)}, ${citation.pages}` : fileStem(citation);
 }
 
 //
@@ -32,9 +39,29 @@ function VariableLocation({ variable }: { variable: CitationVariable }) {
 }
 
 //
+// Muestra la procedencia de una cita de documento: título, páginas, sección y fragmento citado.
+//
+function DocumentDetail({ citation }: { citation: Citation }) {
+  return <li className="py-3 first:pt-0 last:pb-0">
+    <p className="flex items-start gap-2 text-[13px] font-medium leading-snug">
+      <ChatIcon name="description" className="mt-px size-4 shrink-0 text-primary" />
+      <span className="min-w-0 [overflow-wrap:anywhere]">{citation.title ?? citation.file_name}</span>
+    </p>
+    <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 pl-6 text-xs leading-relaxed">
+      <dt className="text-foreground-secondary">Archivo</dt><dd className="[overflow-wrap:anywhere]">{citation.file_name}</dd>
+      {citation.pages && <><dt className="text-foreground-secondary">Página</dt><dd>{citation.pages}</dd></>}
+      {citation.section && <><dt className="text-foreground-secondary">Sección</dt><dd className="[overflow-wrap:anywhere]">{citation.section}</dd></>}
+    </dl>
+    {citation.excerpt && <blockquote className="mt-2 ml-6 border-l-2 border-border pl-2 text-xs leading-relaxed text-foreground-secondary [overflow-wrap:anywhere]">{citation.excerpt}</blockquote>}
+    {citation.doubtful && <p className="mt-2 ml-6 text-[11px] leading-relaxed text-warning">La extracción de este fragmento tiene advertencias: sus números no se usan como evidencia confirmada.</p>}
+  </li>;
+}
+
+//
 // Muestra la procedencia de una cita: archivo, hoja, filas, variables y versión.
 //
 function CitationDetail({ citation }: { citation: Citation }) {
+  if (citation.kind === "document") return <DocumentDetail citation={citation} />;
   const location = citation.sheet ?? (citation.dataset && citation.dataset !== shortName(citation) ? citation.dataset : null);
   const rows = citation.first_row != null && citation.last_row != null
     ? `${citation.first_row} a ${citation.last_row}` : null;
@@ -89,7 +116,8 @@ export function CitationChip({ citations }: { citations: Citation[] }) {
     <button ref={triggerRef} type="button" popoverTarget={id} data-citation-chip
       aria-label={`${title}: ${citations.map(shortName).join(", ")}. Ver detalles`}
       className="mx-1 inline-flex max-w-[min(15rem,70vw)] translate-y-[-1px] items-center gap-1 rounded-full bg-surface-elevated/80 px-2 py-0.5 align-middle text-[11px] font-medium leading-4 text-foreground-secondary transition-colors hover:bg-primary/15 hover:text-foreground focus-visible:bg-primary/15">
-      <span className="truncate">{shortName(first)}</span>
+      <span className="truncate">{fileStem(first)}{first.pages && ","}</span>
+      {first.pages && <span className="shrink-0">{first.pages}</span>}
       {rest.length > 0 && <span className="shrink-0">+{rest.length}</span>}
     </button>
     {client && createPortal(<div ref={popoverRef} id={id} popover="auto" role="dialog" aria-label={title} tabIndex={-1}
