@@ -21,13 +21,31 @@ const palettes = {
   dark: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"],
 };
 
+const spanishLocale = {
+  moduleType: "locale",
+  name: "es",
+  dictionary: {},
+  format: {
+    days: ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"],
+    shortDays: ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"],
+    months: ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"],
+    shortMonths: ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"],
+    date: "%d/%m/%Y",
+    decimal: ",",
+    thousands: ".",
+  },
+};
+
 let renderer: Promise<PlotlyApi> | undefined;
 
 //
-// Carga una sola vez el renderizador de Plotly y permite reintentar si falla.
+// Carga una sola vez el renderizador de Plotly con el formato en español y permite reintentar si falla.
 //
 function loadRenderer() {
-  renderer ??= import("plotly.js-basic-dist-min").then((module) => module.default).catch((error) => {
+  renderer ??= import("plotly.js-basic-dist-min").then((module) => {
+    (module.default as PlotlyApi & { register: (modules: unknown) => void }).register(spanishLocale);
+    return module.default;
+  }).catch((error) => {
     renderer = undefined;
     throw error;
   });
@@ -136,11 +154,16 @@ function themedFigure(figure: PlotlyFigure, element: HTMLElement, theme: "light"
   const lines = labels?.reference_lines ?? [];
   layout.shapes = lines.map((line) => referenceShape(line, tokens.getPropertyValue("--warning").trim()));
   layout.annotations = lines.map((line) => referenceLabel(line, tokens.getPropertyValue("--warning").trim()));
+  if (window.matchMedia("(pointer: coarse)").matches) {
+    layout.dragmode = false;
+    for (const axis of [layout.xaxis, layout.yaxis]) if (axis) axis.fixedrange = true;
+  }
   const sizing = responsive(figure, element.clientWidth);
   if (sizing.bargap !== undefined) layout.bargap = sizing.bargap;
   if (layout.xaxis && sizing.tickvals) Object.assign(layout.xaxis, { tickvals: sizing.tickvals, ticktext: sizing.ticktext });
   const config = structuredClone(figure.config) as Partial<Config>;
   config.displaylogo = false;
+  config.locale = "es";
   config.toImageButtonOptions = { ...config.toImageButtonOptions, filename: title };
   return { data, layout, config };
 }

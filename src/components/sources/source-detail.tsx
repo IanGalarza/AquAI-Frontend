@@ -189,10 +189,10 @@ export function SourceDetail({ source, toggling, onToggle }: {
     : source.processing_status === "processing" ? "Estamos preparando el archivo. Esta vista se actualiza sola."
     : failed ? "No pudimos preparar el archivo."
     : !source.isActive ? isDocument ? "El documento está preparado y desactivado." : "El archivo está preparado. Activá la fuente para consultarlo."
-    : source.queryable ? "El archivo está listo para tus consultas."
+    : source.queryable ? isDocument ? "El documento está listo: AquAI lo usa para responder e interpretar resultados." : "El archivo está listo para tus consultas."
     : source.semantic_index_status === "failed" ? "El archivo está preparado."
     : source.document?.duplicate_of_source_id ? "Este documento repite el texto de otra fuente ya indexada."
-    : isDocument && source.semantic_index_status === "ready" ? "El documento está indexado. Todavía no se puede consultar desde el chat."
+    : isDocument && source.semantic_index_status === "ready" ? "El documento está indexado, pero no está disponible para las respuestas."
     : "El archivo está preparado. Estamos habilitando la búsqueda.";
   return (
     <div className="space-y-5">
@@ -207,7 +207,7 @@ export function SourceDetail({ source, toggling, onToggle }: {
           <Information label="Cargado" icon="calendar"><time dateTime={source.created_at}>{formatDate(source.created_at)}</time></Information>
           <Information label="Preparación" icon="refresh"><ProcessingBadge status={source.processing_status} compact /></Information>
           <Information label="Búsqueda" icon="search"><SemanticBadge status={source.semantic_index_status} active={source.isActive} compact /></Information>
-          <Information label="Consultas" icon="message">{source.queryable ? "Disponible" : isDocument ? "Todavía no en el chat" : "No disponible"}</Information>
+          <Information label="Consultas" icon="message">{source.queryable ? "Disponible" : "No disponible"}</Information>
         </dl>
         {source.description && <p className="mt-4 break-words text-xs leading-relaxed text-foreground-secondary">{formatSourceMessage(source.description)}</p>}
         {failed && <p className="mt-3 text-[11px] text-foreground-secondary">Activar la fuente no vuelve a preparar el archivo.</p>}

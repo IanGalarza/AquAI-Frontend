@@ -8,6 +8,7 @@ import { assistantSnapshot, conversationError, generationActive, generationLease
 
 const NEW = "new";
 const PAGE_SIZE = 20;
+const MIN_OPENING_MESSAGES = PAGE_SIZE / 2;
 type Thread = {
   conversation: Conversation | null;
   messages: ChatMessage[];
@@ -117,6 +118,11 @@ export function useConversations() {
     if (latestPage !== pageNumber) {
       pageNumber = latestPage;
       page = await api.getMessages(id, pageNumber, PAGE_SIZE, signal);
+    }
+    if (pageNumber > 1 && page.items.length < MIN_OPENING_MESSAGES) {
+      const previous = await api.getMessages(id, pageNumber - 1, PAGE_SIZE, signal);
+      page = { ...page, items: [...previous.items, ...page.items] };
+      pageNumber -= 1;
     }
     if (signal?.aborted) return;
     updateThread(id, (current) => ({ ...current, conversation, total: page.total,
@@ -365,8 +371,8 @@ export function useConversations() {
         const done = await api.streamMessage(target, content, turnListeners(target, owner, true));
         showDone(target, done);
         if (done.message) changeLive(target, owner, null);
-        await refreshThread(target);
         updatePending(target, null);
+        await refreshThread(target).catch(() => undefined);
       } catch (error) {
         const rejected = error instanceof ApiError && !(error instanceof api.TurnError) && [404, 409, 422].includes(error.status);
         updatePending(target, { ...turn, phase: "checking" });

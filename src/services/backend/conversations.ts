@@ -10,8 +10,17 @@ const messages: Record<number, string> = {
   504: "Se agotó el tiempo de espera. Consultá el estado guardado antes de volver a enviar.",
   503: "El historial de conversaciones no está disponible. Intentá consultarlo nuevamente.",
 };
+const readMessages: Record<number, string> = {
+  404: "La conversación no existe o ya no está disponible.",
+  422: "El enlace de la conversación no es válido.",
+  500: "No se pudo cargar la conversación. Intentá nuevamente en unos instantes.",
+  502: "No se pudo cargar la conversación. Intentá nuevamente en unos instantes.",
+  503: "El historial de conversaciones no está disponible. Intentá consultarlo nuevamente.",
+  504: "El historial tardó demasiado en responder. Intentá nuevamente.",
+};
 const outcomeStatuses: Partial<Record<TurnDoneEvent["outcome"], number>> = { generation_failed: 502, execution_failed: 500, timed_out: 504 };
 const policy = { httpMessages: messages, appendDetail: false };
+const readPolicy = { httpMessages: readMessages, appendDetail: false };
 const configuredTimeout = Number(process.env.NEXT_PUBLIC_CONVERSATION_TIMEOUT_MS);
 const generationTimeoutMs = Number.isSafeInteger(configuredTimeout) && configuredTimeout >= 60_000 && configuredTimeout <= 3_660_000
   ? configuredTimeout : 1_620_000;
@@ -61,21 +70,21 @@ export function deleteConversation(id: string): Promise<void> {
 // Lista conversaciones paginadas (GET /conversations).
 //
 export function listConversations(page = 1, signal?: AbortSignal): Promise<ConversationPage> {
-  return apiRequest(`/conversations?${new URLSearchParams({ page: String(page), page_size: "20" })}`, { signal }, policy);
+  return apiRequest(`/conversations?${new URLSearchParams({ page: String(page), page_size: "20" })}`, { signal }, readPolicy);
 }
 
 //
 // Obtiene una conversación (GET /conversations/{id}).
 //
 export function getConversation(id: string, signal?: AbortSignal): Promise<Conversation> {
-  return apiRequest(`/conversations/${encodeURIComponent(id)}`, { signal }, policy);
+  return apiRequest(`/conversations/${encodeURIComponent(id)}`, { signal }, readPolicy);
 }
 
 //
 // Lista los mensajes paginados de una conversación (GET /conversations/{id}/messages).
 //
 export function getMessages(id: string, page = 1, pageSize = 20, signal?: AbortSignal): Promise<MessagePage> {
-  return apiRequest(`/conversations/${encodeURIComponent(id)}/messages?${new URLSearchParams({ page: String(page), page_size: String(pageSize) })}`, { signal }, policy);
+  return apiRequest(`/conversations/${encodeURIComponent(id)}/messages?${new URLSearchParams({ page: String(page), page_size: String(pageSize) })}`, { signal }, readPolicy);
 }
 
 //
