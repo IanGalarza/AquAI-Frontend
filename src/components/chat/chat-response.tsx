@@ -145,16 +145,18 @@ function ResultTable({ table, view, language, citations }: { table: StoredTable;
 }
 
 //
-// Muestra un gráfico de la respuesta con su título y citas.
+// Muestra un gráfico de la respuesta con su epígrafe numerado al pie, como en un artículo, y sus citas.
 //
-function Chart({ chart, view, citations }: { chart: Visualization; view?: ChartView; citations: Citation[] }) {
-  return <figure className="min-w-0 overflow-hidden rounded-lg border border-border/70 bg-surface" data-visualization={chart.operation_id}>
-    <figcaption className="flex items-start justify-between gap-3 px-4 pt-3.5">
-      <span className="min-w-0 text-sm font-medium leading-snug [overflow-wrap:anywhere]">{chart.title}</span>
-      <CitationChip citations={citations} />
-    </figcaption>
+function Chart({ chart, view, citations, number }: { chart: Visualization; view?: ChartView; citations: Citation[]; number: number }) {
+  return <figure className="min-w-0 overflow-hidden rounded-lg border border-border/70 bg-surface pt-3" data-visualization={chart.operation_id}>
     {chart.figure ? <PlotlyChart figure={chart.figure} title={chart.title} labels={view} /> :
       <p className="p-4 text-[13px] text-foreground-secondary">La figura interactiva no está guardada en esta versión del mensaje.</p>}
+    <figcaption className="flex items-start justify-between gap-3 border-t border-border/60 px-4 py-2.5">
+      <span className="min-w-0 text-[13px] leading-snug [overflow-wrap:anywhere]">
+        <span className="aquai-accent font-semibold">Figura {number}.</span> {chart.title}
+      </span>
+      <CitationChip citations={citations} />
+    </figcaption>
   </figure>;
 }
 
@@ -172,6 +174,7 @@ function responseBlocks(snapshot: AssistantSnapshot, presentation: MessagePresen
   const chartViews = new Map(presentation.charts.map((view) => [view.operation_id, view]));
   const blocks: Block[] = [];
   let start = 0;
+  let figures = 0;
 
   function add(key: string, weight: number, content: BlockContent) {
     blocks.push({ key, start, weight, ...content });
@@ -186,7 +189,7 @@ function responseBlocks(snapshot: AssistantSnapshot, presentation: MessagePresen
   function addChart(key: string, position: string, cited: string[] = []) {
     const item = charts.get(key);
     const view = chartViews.get(key);
-    if (item) add(`chart-${position}-${key}`, BLOCK_WEIGHT, { node: <Chart chart={item} view={view}
+    if (item) add(`chart-${position}-${key}`, BLOCK_WEIGHT, { node: <Chart chart={item} view={view} number={++figures}
       citations={resolve((view?.citations ?? []).filter((id) => !cited.includes(id)))} /> });
   }
 

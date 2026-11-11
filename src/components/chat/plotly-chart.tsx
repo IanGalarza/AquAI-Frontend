@@ -6,8 +6,11 @@ import { useTheme } from "@/hooks/use-theme";
 import type { ChartReferenceLine, ChartView, JsonValue, PlotlyFigure } from "@/types/conversations";
 
 type PlotlyApi = typeof import("plotly.js");
-type Trace = Data & { type?: string; x?: unknown[]; y?: unknown[]; width?: unknown; marker?: Record<string, unknown>; line?: Record<string, unknown> };
-type Responsive = { bargap?: number; tickvals?: JsonValue[]; ticktext?: JsonValue[] };
+type Trace = Data & {
+  type?: string; mode?: string; name?: string; hovertemplate?: string | string[]; x?: unknown[]; y?: unknown[]; width?: unknown;
+  marker?: Record<string, unknown>; line?: Record<string, unknown>;
+};
+type Responsive = { bargap?: number; tickvals?: JsonValue[]; ticktext?: JsonValue[]; height: number };
 type Labels = Pick<ChartView, "x_title" | "y_title" | "legend_title" | "reference_lines">;
 
 const CHART_HEIGHT = 340;
@@ -16,6 +19,14 @@ const MAX_BAR_PX = 32;
 const MIN_TICK_PX = 64;
 const MANY_CATEGORIES = 12;
 const RESIZE_DEBOUNCE_MS = 120;
+const LINE_WIDTH = 1.5;
+const MARKER_SIZE = 6;
+const FILL_OPACITY = 0.6;
+const DENSE_POINTS = 60;
+const LEGEND_ROW_PX = 22;
+const LEGEND_SYMBOL_PX = 46;
+const LEGEND_CHAR_PX = 6.6;
+const LEGEND_INSET_PX = 32;
 const palettes = {
   light: ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"],
   dark: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"],
@@ -67,10 +78,47 @@ function largest(values: unknown[]): number {
 }
 
 //
-// Calcula el espaciado de barras y las marcas del eje X según el ancho disponible.
+// Devuelve cuántos caracteres de un rótulo entran en una fila de la leyenda, a la derecha de su título.
 //
-function responsive(figure: PlotlyFigure, width: number): Responsive {
-  const result: Responsive = {};
+function legendLimit(width: number, title: string): number {
+  return Math.max(8, Math.floor((width - LEGEND_INSET_PX - LEGEND_SYMBOL_PX - title.length * LEGEND_CHAR_PX) / LEGEND_CHAR_PX));
+}
+
+//
+// Estima cuántas filas ocupa la leyenda horizontal: Plotly la reparte en columnas del ancho del rótulo más
+// largo, a la derecha de su título.
+//
+function legendRows(lengths: number[], title: string, width: number): number {
+  const item = LEGEND_SYMBOL_PX + Math.max(...lengths) * LEGEND_CHAR_PX;
+  const columns = Math.max(1, Math.floor((width - LEGEND_INSET_PX - title.length * LEGEND_CHAR_PX) / item));
+  return Math.ceil(lengths.length / columns);
+}
+
+//
+// Acorta por el medio el rótulo de una serie para que entre en la leyenda (nombres con el mismo comienzo
+// siguen distinguiéndose por su final) y muestra su nombre completo en el texto emergente de sus puntos.
+//
+function fittedSeries(trace: Trace, limit: number) {
+  const name = trace.name ?? "";
+  const named = (template: string) => template.replace("<extra></extra>", `<extra>${name}</extra>`);
+  if (trace.hovertemplate) {
+    trace.hovertemplate = Array.isArray(trace.hovertemplate) ? trace.hovertemplate.map(named) : named(trace.hovertemplate);
+  }
+  if (name.length <= limit) return;
+
+  const kept = Math.floor((limit - 1) / 2);
+  trace.name = `${name.slice(0, kept).trimEnd()}…${name.slice(-kept).trimStart()}`;
+}
+
+//
+// Calcula el espaciado de barras, las marcas del eje X y la altura (que crece con las filas de la leyenda)
+// según el ancho disponible.
+//
+function responsive(figure: PlotlyFigure, width: number, legendTitle = ""): Responsive {
+  const limit = legendLimit(width, legendTitle);
+  const lengths = figure.layout.showlegend ? figure.data.map((trace) => Math.min(limit, String(trace.name ?? "").length)) : [];
+  const rows = lengths.length ? legendRows(lengths, legendTitle, width) : 1;
+  const result: Responsive = { height: CHART_HEIGHT + (rows - 1) * LEGEND_ROW_PX };
   const bars = figure.data.filter((trace) => trace.type === "bar" && trace.width === undefined);
   if (bars.length) {
     const categories = new Set(bars.flatMap((trace) => Array.isArray(trace.x) ? trace.x : [])).size;
@@ -85,6 +133,45 @@ function responsive(figure: PlotlyFigure, width: number): Responsive {
     result.ticktext = axis.ticktext.filter((_, index) => index % step === 0);
   }
   return result;
+}
+
+//
+// Devuelve un color hexadecimal con la opacidad indicada.
+//
+function withOpacity(hex: string, opacity: number): string {
+  const [red, green, blue] = [1, 3, 5].map((start) => parseInt(hex.slice(start, start + 2), 16));
+  return `rgba(${red},${green},${blue},${opacity})`;
+}
+
+//
+// Aplica a una traza el trazo de figura científica: relleno translúcido con borde fino del mismo color,
+// líneas finas y, en series densas, la línea sin marcadores. Una serie que repite color (más series que la
+// paleta) se distingue con símbolos huecos y línea punteada, o con barras rayadas.
+//
+function paperTrace(trace: Trace, color: string, repeated: boolean) {
+  const pattern = repeated && trace.type === "bar" ? { pattern: { shape: "/", fgcolor: color, solidity: 0.35 } } : {};
+  const marker: Record<string, unknown> = { ...trace.marker, color: withOpacity(color, FILL_OPACITY), line: { color, width: 1 }, ...pattern };
+  trace.marker = marker;
+  if (trace.type !== "scatter") return;
+
+  marker.size = MARKER_SIZE;
+  if (repeated) marker.symbol = `${marker.symbol ?? "circle"}-open`;
+  if (!trace.line) return;
+
+  trace.line = { ...trace.line, color, width: LINE_WIDTH, ...(repeated && { dash: "dot" }) };
+  if ((trace.x?.length ?? 0) > DENSE_POINTS) trace.mode = "lines";
+}
+
+//
+// Devuelve el estilo de un eje de figura científica: marco completo, marcas hacia adentro y grilla punteada tenue.
+//
+function paperAxis(axis: Partial<LayoutAxis>, ink: string, grid: string, title?: string | null): Partial<LayoutAxis> {
+  return {
+    color: ink, linecolor: ink, linewidth: 1, showline: true, mirror: "ticks", zeroline: false,
+    ticks: axis.type === "category" ? "" : "inside", ticklen: 5, tickwidth: 1, tickcolor: ink,
+    gridcolor: grid, griddash: "dot", gridwidth: 1, tickfont: { size: 11, color: ink },
+    title: { ...(typeof axis.title === "object" ? axis.title : {}), ...(title && { text: escapeMarkup(title) }), font: { size: 12, color: ink }, standoff: 10 },
+  };
 }
 
 //
@@ -118,35 +205,26 @@ function themedFigure(figure: PlotlyFigure, element: HTMLElement, theme: "light"
   const family = getComputedStyle(element).fontFamily;
   const palette = palettes[theme];
   const data = structuredClone(figure.data) as unknown as Trace[];
-  const layout = structuredClone(figure.layout) as unknown as Partial<Layout> & { barcornerradius?: number };
-  data.forEach((trace, index) => {
-    const color = palette[index % palette.length];
-    if (trace.type === "scatter") {
-      trace.marker = { ...trace.marker, color, size: 8, line: { color: surface, width: 2 } };
-      if (trace.line) trace.line = { ...trace.line, color, width: 2 };
-    } else {
-      trace.marker = { ...trace.marker, color, line: { width: 0 } };
-    }
-  });
-  layout.barcornerradius = 4;
+  const layout = structuredClone(figure.layout) as unknown as Partial<Layout>;
+  const legendTitle = labels?.legend_title ?? "";
+  const sizing = responsive(figure, element.clientWidth, legendTitle);
+  data.forEach((trace, index) => paperTrace(trace, palette[index % palette.length], index >= palette.length));
+  if (layout.showlegend) data.forEach((trace) => fittedSeries(trace, legendLimit(element.clientWidth, legendTitle)));
   layout.title = { text: "" };
   layout.annotations = [];
-  layout.height = CHART_HEIGHT;
+  layout.height = sizing.height;
   layout.paper_bgcolor = "rgba(0,0,0,0)";
   layout.plot_bgcolor = "rgba(0,0,0,0)";
-  layout.font = { ...layout.font, family, size: 12, color: secondary };
-  layout.margin = { l: 12, r: 20, t: layout.showlegend ? 44 : 20, b: 12, pad: 6 };
+  layout.font = { ...layout.font, family, size: 12, color: foreground };
+  layout.margin = { l: 12, r: 20, t: layout.showlegend ? 44 : 20, b: 12, pad: 0 };
   layout.hoverlabel = { bgcolor: surface, bordercolor: border, font: { family, size: 12, color: foreground } };
-  layout.legend = { ...layout.legend, orientation: "h", x: 0, y: 1.02, yanchor: "bottom", font: { color: secondary },
+  layout.legend = { ...layout.legend, orientation: "h", x: 1, xanchor: "right", y: 1.02, yanchor: "bottom",
+    bgcolor: surface, bordercolor: foreground, borderwidth: 1, font: { color: foreground },
     ...(labels?.legend_title && { title: { text: escapeMarkup(labels.legend_title) } }) };
   layout.modebar = { bgcolor: "rgba(0,0,0,0)", color: secondary, activecolor: foreground };
   for (const [axis, key, text] of [[layout.xaxis, "x", labels?.x_title], [layout.yaxis, "y", labels?.y_title]] as const) {
     if (!axis) continue;
-    Object.assign(axis, {
-      color: secondary, linecolor: border, gridcolor: border, gridwidth: 1, zeroline: false, ticks: "",
-      showline: key === "x", tickfont: { size: 11, color: secondary },
-      title: { ...(typeof axis.title === "object" ? axis.title : {}), ...(text && { text: escapeMarkup(text) }), font: { size: 12, color: secondary }, standoff: 12 },
-    } satisfies Partial<LayoutAxis>);
+    Object.assign(axis, paperAxis(axis, foreground, border, text));
     if (typeof axis.tickformat === "string" && !axis.tickformat.startsWith(",") && largest(data.flatMap((trace) => trace[key] ?? [])) >= 10000) {
       axis.tickformat = "," + axis.tickformat;
     }
@@ -158,7 +236,6 @@ function themedFigure(figure: PlotlyFigure, element: HTMLElement, theme: "light"
     layout.dragmode = false;
     for (const axis of [layout.xaxis, layout.yaxis]) if (axis) axis.fixedrange = true;
   }
-  const sizing = responsive(figure, element.clientWidth);
   if (sizing.bargap !== undefined) layout.bargap = sizing.bargap;
   if (layout.xaxis && sizing.tickvals) Object.assign(layout.xaxis, { tickvals: sizing.tickvals, ticktext: sizing.ticktext });
   const config = structuredClone(figure.config) as Partial<Config>;
@@ -194,16 +271,18 @@ export function PlotlyChart({ figure, title, labels }: { figure: PlotlyFigure; t
         if (disposed) return;
         plotly = loaded;
         const themed = themedFigure(figure, target, theme === "dark" ? "dark" : "light", title, labels);
+        target.style.height = `${themed.layout.height}px`;
         await loaded.react(target, themed.data, themed.layout, themed.config);
         if (disposed) return;
         observer = new ResizeObserver(() => {
           clearTimeout(pending);
           pending = setTimeout(async () => {
             if (!target.isConnected) return;
-            const { bargap, tickvals, ticktext } = responsive(figure, target.clientWidth);
+            const { bargap, tickvals, ticktext, height } = responsive(figure, target.clientWidth, labels?.legend_title ?? "");
+            target.style.height = `${height}px`;
             await loaded.Plots.resize(target);
             await loaded.relayout(target, {
-              ...(bargap !== undefined && { bargap }), ...(tickvals && { "xaxis.tickvals": tickvals, "xaxis.ticktext": ticktext }),
+              height, ...(bargap !== undefined && { bargap }), ...(tickvals && { "xaxis.tickvals": tickvals, "xaxis.ticktext": ticktext }),
             } as Partial<Layout>);
           }, RESIZE_DEBOUNCE_MS);
         });
