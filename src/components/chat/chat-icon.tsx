@@ -1,10 +1,12 @@
 import type { SVGProps } from "react";
 
-type IconName = "plus" | "search" | "message" | "database" | "send" | "stop" | "check" | "sun" | "moon" | "menu" | "close" | "upload" | "refresh" | "arrow-left" | "arrow-up" | "chevron-right" | "chevron-down" | "file" | "folder" | "calendar" | "clock" | "cloud-upload" | "eye" | "table" | "rows" | "columns" | "text" | "hash" | "description" | "check-circle" | "alert-triangle" | "alert-circle" | "calculator" | "pencil" | "trash";
+export type IconName = "plus" | "search" | "message" | "database" | "send" | "stop" | "check" | "sun" | "moon" | "menu" | "close" | "upload" | "refresh" | "arrow-left" | "arrow-up" | "chevron-right" | "chevron-down" | "file" | "file-pdf" | "file-csv" | "file-xlsx" | "file-docx" | "folder" | "calendar" | "clock" | "cloud-upload" | "eye" | "table" | "rows" | "columns" | "text" | "hash" | "description" | "check-circle" | "alert-triangle" | "alert-circle" | "calculator" | "pencil" | "trash";
 
 type ChatIconProps = SVGProps<SVGSVGElement> & {
   name: IconName;
 };
+
+const filePage = <><path d="M5 11V5a2 2 0 0 1 2-2h7l5 5v3" /><path d="M14 3v5h5" /></>;
 
 const paths: Record<IconName, React.ReactNode> = {
   plus: <path d="M12 5v14M5 12h14" />,
@@ -26,6 +28,10 @@ const paths: Record<IconName, React.ReactNode> = {
   "chevron-down": <path d="m6 9 6 6 6-6" />,
   "arrow-up": <path d="M12 20V4m-6 6 6-6 6 6" />,
   file: <><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6Z" /><path d="M14 3v6h6M9 13l6 5m0-5-6 5" /></>,
+  "file-pdf": <>{filePage}<path d="M4.25 21v-7h1.5a2 2 0 0 1 0 4h-1.5M10.25 14v7h.5a3 3 0 0 0 3-3v-1a3 3 0 0 0-3-3ZM19.75 14h-3.5v7M16.25 17.5h2.75" /></>,
+  "file-csv": <>{filePage}<path d="M7.75 15.2c-.44-.75-1.05-1.2-1.75-1.2c-.97 0-1.75 .78-1.75 1.75v3.5c0 .97 .78 1.75 1.75 1.75c.7 0 1.31-.45 1.75-1.2M13.75 15.2c-.44-.75-1.05-1.2-1.75-1.2c-.96 0-1.75 .75-1.75 1.75c0 1.15 .88 1.45 1.75 1.75c.88 .3 1.75 .6 1.75 1.75c0 1-.79 1.75-1.75 1.75c-.7 0-1.31-.45-1.75-1.2M16.25 14l1.75 7l1.75-7" /></>,
+  "file-xlsx": <>{filePage}<path d="M1.25 14l3.5 7M4.75 14l-3.5 7M7.25 14v7h3.25M16.75 15.2c-.44-.75-1.05-1.2-1.75-1.2c-.96 0-1.75 .75-1.75 1.75c0 1.15 .88 1.45 1.75 1.75c.88 .3 1.75 .6 1.75 1.75c0 1-.79 1.75-1.75 1.75c-.7 0-1.31-.45-1.75-1.2M19.25 14l3.5 7M22.75 14l-3.5 7" /></>,
+  "file-docx": <>{filePage}<path d="M1.25 14v7h.5a3 3 0 0 0 3-3v-1a3 3 0 0 0-3-3ZM9 14a1.75 1.75 0 0 1 1.75 1.75v3.5a1.75 1.75 0 0 1-1.75 1.75a1.75 1.75 0 0 1-1.75-1.75v-3.5a1.75 1.75 0 0 1 1.75-1.75ZM16.75 15.2c-.44-.75-1.05-1.2-1.75-1.2c-.97 0-1.75 .78-1.75 1.75v3.5c0 .97 .78 1.75 1.75 1.75c.7 0 1.31-.45 1.75-1.2M19.25 14l3.5 7M22.75 14l-3.5 7" /></>,
   folder: <path d="M3 7V5a2 2 0 0 1 2-2h4l3 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Zm0 0h7l2 3h9" />,
   calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 11h18" /></>,
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,

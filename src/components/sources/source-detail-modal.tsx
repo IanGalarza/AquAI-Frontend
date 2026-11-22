@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { ChatIcon } from "../chat/chat-icon";
+import { SourceFileIcon } from "./source-file-icon";
 import type { SourceDetail, SourceListItem } from "@/types/sources";
-import { formatBytes, isDocumentType } from "@/utils/sources";
+import { formatBytes } from "@/utils/sources";
 
 type SourceDetailModalProps = {
   children: ReactNode;
@@ -66,7 +67,7 @@ export function SourceDetailModal({ children, source, onClose, onRefresh, refres
       <div className="flex h-full flex-col">
         <header className="flex shrink-0 items-start justify-between gap-3 px-4 pb-3 pt-4 sm:px-6 sm:pt-5">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="grid size-11 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary"><ChatIcon name={source && isDocumentType(source.file_type) ? "description" : "file"} className="size-6" /></span>
+            <SourceFileIcon fileType={source?.file_type} className="size-11" />
             <div className="min-w-0">
               <h2 id="source-detail-title" className="break-words text-base font-semibold leading-snug tracking-[-0.02em] [overflow-wrap:anywhere] sm:text-lg">{filename || "Consultando la fuente…"}</h2>
               {source && <p className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-foreground-secondary"><span className="rounded-md bg-surface-elevated/70 px-1.5 py-0.5 font-medium">{source.file_type.toUpperCase()}</span><span>{formatBytes(source.file_size_bytes)}</span></p>}

@@ -17,6 +17,11 @@
   --success: #28734f;
   --warning: #865e1f;
   --error: #ae4149;
+
+  --file-pdf: #ae3732;
+  --file-docx: #3264ae;
+  --file-xlsx: #27744a;
+  --file-csv: #7c46b9;
 }
 
 :root[data-theme="dark"] {
@@ -37,4 +42,9 @@
   --success: #80bda0;
   --warning: #dfba80;
   --error: #ed979b;
+
+  --file-pdf: #ee958b;
+  --file-docx: #88a7f2;
+  --file-xlsx: #7ece9f;
+  --file-csv: #c4a0ee;
 }
